@@ -8,5 +8,5 @@ class PrefixeValableModel extends Model
 {
     protected $table = 'prefixe_valable';
     protected $primaryKey = 'id';
-    protected $allowedFields = ['prefixe', 'date_ajout'];
+    protected $allowedFields = ['operateur_id', 'prefixe', 'date_ajout'];
 }

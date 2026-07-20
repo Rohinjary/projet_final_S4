@@ -18,9 +18,21 @@ class OperationService
         int $typeOperationId,
         float $montant,
         float $frais,
-        ?string $destinataireNumero = null
+        ?string $destinataireNumero = null,
+        float $fraisRetrait = 0.0,
+        ?string $referenceTransfert = null,
+        int $nbDestinataires = 1
     ) {
-        return $this->operationModel->enregistrer($clientNumero, $typeOperationId, $montant, $frais, $destinataireNumero);
+        return $this->operationModel->enregistrer(
+            $clientNumero,
+            $typeOperationId,
+            $montant,
+            $frais,
+            $destinataireNumero,
+            $fraisRetrait,
+            $referenceTransfert,
+            $nbDestinataires
+        );
     }
 
     public function calculerSolde(string $numero): float

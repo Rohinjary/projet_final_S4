@@ -37,7 +37,8 @@
 <div class="stat-value"><?= number_format($solde, 0, ',', ' ') ?> Ar</div>
 </div>
 
-<form action="<?= base_url('client/traiter-depot') ?>" method="post">
+<form action="<?= base_url('client/traiter-depot') ?>
+<?= csrf_field() ?>" method="post">
 <div class="mb-3">
 <label class="form-label" for="amount">Montant a deposer (Ar)</label>
 <input class="form-control" id="amount" name="amount" type="number" min="100" max="2000000" step="100" placeholder="Ex. 50 000" required>

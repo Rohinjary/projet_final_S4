@@ -1,0 +1,1 @@
+__ci_last_regenerate|i:1784555864;_ci_previous_url|s:48:"http://localhost:8080/index.php/client/transfert";client_numero|s:10:"0371234567";erreur|s:45:"Numero destinataire introuvable : 0321234567.";__ci_vars|a:2:{s:6:"erreur";s:3:"old";s:13:"_ci_old_input";s:3:"old";}_ci_old_input|a:2:{s:3:"get";a:0:{}s:4:"post";a:2:{s:10:"recipients";s:10:"0321234567";s:6:"amount";s:3:"700";}}
