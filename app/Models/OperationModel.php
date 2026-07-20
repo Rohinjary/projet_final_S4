@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use DateTime;
 
 class OperationModel extends Model
 {
     protected $table         = 'operation';
     protected $primaryKey    = 'id';
     protected $returnType    = 'array';
-    protected $allowedFields = ['client_numero', 'type_operation_id', 'destinataire_numero', 'montant', 'frais'];
+    protected $allowedFields = ['client_numero', 'type_operation_id', 'destinataire_numero', 'montant', 'frais', 'date_operation'];
     protected $useTimestamps = false;
 
     public function enregistrer(
@@ -25,6 +26,7 @@ class OperationModel extends Model
             'destinataire_numero'  => $destinataireNumero,
             'montant'              => $montant,
             'frais'                => $frais,
+            'date_operation'       => (new DateTime())->format('Y-m-d H:i:s'),
         ]);
     }
 

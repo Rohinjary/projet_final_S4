@@ -50,14 +50,24 @@
 <p class="text-mp-muted small">Aucune operation pour le moment.</p>
 <?php endif; ?>
 <?php foreach ($historique as $op) : ?>
-<?php $recu = $op['destinataire_numero'] === $numero; ?>
+<?php
+$estDepot = $op['type_libelle'] === 'depot';
+$estRecu  = $op['type_libelle'] === 'transfert' && $op['destinataire_numero'] === $numero;
+$dateOperation = $op['date_operation'];
+if ($dateOperation) {
+	$timestamp = strtotime($dateOperation);
+	if ($timestamp !== false) {
+		$dateOperation = date('d/m/Y H:i', $timestamp);
+	}
+}
+?>
 <div class="mp-card mp-card-body d-flex justify-content-between align-items-center">
 <div>
-<div class="fw-bold"><?= esc(ucfirst($op['type_libelle'])) ?><?= $recu ? ' (recu)' : '' ?></div>
-<div class="small text-mp-muted"><?= esc($op['date_operation']) ?></div>
+<div class="fw-bold"><?= esc(ucfirst($op['type_libelle'])) ?><?= $estRecu ? ' (recu)' : '' ?></div>
+<div class="small text-mp-muted"><?= esc($dateOperation) ?></div>
 </div>
-<div class="fw-bold <?= $recu ? 'text-success' : '' ?>">
-<?= $recu ? '+' : '-' ?><?= number_format($op['montant'], 0, ',', ' ') ?> Ar
+<div class="fw-bold <?= $estDepot || $estRecu ? 'text-success' : '' ?>">
+<?= $estDepot || $estRecu ? '+' : '-' ?><?= number_format($op['montant'], 0, ',', ' ') ?> Ar
 </div>
 </div>
 <?php endforeach; ?>
