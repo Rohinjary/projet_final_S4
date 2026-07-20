@@ -16,7 +16,7 @@
       <div class="admin-nav-label">Tableau de bord</div>
       <a class="active" href="<?= site_url('admin/dashboard') ?>"><i class="bi bi-grid-1x2"></i>Dashboard</a>
       <div class="admin-nav-label">Configuration</div>
-      <a href="#"><i class="bi bi-hash"></i>Préfixes</a>
+      <a href="<?= site_url('admin/prefixes') ?>"><i class="bi bi-hash"></i>Préfixes</a>
       <a href="#"><i class="bi bi-table"></i>Types & barèmes</a>
       <div class="admin-nav-label">Rapports</div>
       <a href="#"><i class="bi bi-graph-up-arrow"></i>Situation gains</a>
