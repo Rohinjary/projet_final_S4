@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class BaremeFrais extends Model
+class BaremeFraisModel extends Model
 {
     protected $table = 'bareme_frais';
     protected $primaryKey = 'id';

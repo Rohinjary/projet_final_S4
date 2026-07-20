@@ -4,7 +4,7 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-class TypeOperation extends Model
+class TypeOperationModel extends Model
 {
     protected $table = 'type_operation';
     protected $primaryKey = 'id';
