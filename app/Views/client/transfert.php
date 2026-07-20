@@ -37,7 +37,8 @@
 <div class="stat-value"><?= number_format($solde, 0, ',', ' ') ?> Ar</div>
 </div>
 
-<form action="<?= base_url('client/traiter-transfert') ?>" method="post">
+<form action="<?= base_url('client/traiter-transfert') ?>
+<?= csrf_field() ?>" method="post">
 <div class="mb-3">
 <label class="form-label" for="recipient">Numero destinataire</label>
 <div class="input-group">

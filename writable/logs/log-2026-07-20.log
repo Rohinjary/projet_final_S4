@@ -198,3 +198,19 @@ in APPPATH/Controllers/Client/ClientController.php on line 294.
  6 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  7 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
  8 SYSTEMPATH/rewrite.php(44): require_once('/home/njary/Documents/S4/SI(Mr Rojo)/projet_final_S4/public/index.php')
+CRITICAL - 2026-07-20 13:20:40 --> ErrorException: Access level to App\Controllers\Admin\PrefixeController::validateData() must be protected (as in class CodeIgniter\Controller) or weaker
+[Method: GET, Route: admin/prefixes]
+in APPPATH/Controllers/Admin/PrefixeController.php on line 119.
+ 1 [internal function]: CodeIgniter\Debug\Exceptions->shutdownHandler()
+CRITICAL - 2026-07-20 13:21:08 --> ErrorException: Access level to App\Controllers\Admin\PrefixeController::validateData() must be protected (as in class CodeIgniter\Controller) or weaker
+[Method: GET, Route: admin/prefixes]
+in APPPATH/Controllers/Admin/PrefixeController.php on line 119.
+ 1 [internal function]: CodeIgniter\Debug\Exceptions->shutdownHandler()
+CRITICAL - 2026-07-20 13:27:05 --> ErrorException: Access level to App\Controllers\Admin\PrefixeController::validateData() must be protected (as in class CodeIgniter\Controller) or weaker
+[Method: GET, Route: admin/prefixes]
+in APPPATH/Controllers/Admin/PrefixeController.php on line 119.
+ 1 [internal function]: CodeIgniter\Debug\Exceptions->shutdownHandler()
+CRITICAL - 2026-07-20 13:43:15 --> ErrorException: Access level to App\Controllers\Admin\PrefixeController::validateData() must be protected (as in class CodeIgniter\Controller) or weaker
+[Method: GET, Route: admin/prefixes]
+in APPPATH/Controllers/Admin/PrefixeController.php on line 119.
+ 1 [internal function]: CodeIgniter\Debug\Exceptions->shutdownHandler()

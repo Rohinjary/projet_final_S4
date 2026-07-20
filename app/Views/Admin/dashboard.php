@@ -10,81 +10,85 @@
 </head>
 <body>
 <div class="admin-layout">
-  <aside class="admin-sidebar">
-    <div class="admin-logo"><strong><i class="bi bi-phone me-1"></i>MobiPay</strong><small>Espace Opérateur</small></div>
-    <nav class="admin-nav">
-      <div class="admin-nav-label">Tableau de bord</div>
-      <a class="active" href="<?= site_url('admin/dashboard') ?>"><i class="bi bi-grid-1x2"></i>Dashboard</a>
-      <div class="admin-nav-label">Configuration</div>
-      <a href="<?= site_url('admin/prefixes') ?>"><i class="bi bi-hash"></i>Préfixes</a>
-      <a href="<?= site_url('admin/baremes') ?>"><i class="bi bi-table"></i>Types & barèmes</a>
-      <div class="admin-nav-label">Rapports</div>
-      <a href="<?= site_url('admin/gains') ?>"><i class="bi bi-graph-up-arrow"></i>Situation gains</a>
-      <a href="<?= site_url('admin/comptes') ?>"><i class="bi bi-people"></i>Comptes clients</a>
-    </nav>
-    <div class="admin-sidebar-footer"><a href="<?= site_url('logout') ?>"><i class="bi bi-box-arrow-left me-2"></i>Déconnexion</a></div>
-  </aside>
-
+  <?= view('Admin/partials/sidebar', ['activePage' => 'dashboard']) ?>
+  <div class="sidebar-backdrop" data-sidebar-toggle></div>
   <div class="admin-main">
-    <header class="admin-topbar">
-      <div class="admin-page-title">Tableau de bord opérateur</div>
-      <div class="admin-user"><span>Opérateur</span><div class="admin-avatar">OP</div></div>
-    </header>
-
+    <?= view('Admin/partials/topbar', ['pageTitle' => 'Tableau de bord opérateur']) ?>
     <main class="admin-content">
-      <?php if (session()->getFlashdata('success')): ?>
-        <div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div>
-      <?php endif; ?>
+      <?php if (session()->getFlashdata('success')): ?><div class="alert alert-success"><?= esc(session()->getFlashdata('success')) ?></div><?php endif; ?>
 
       <div class="row g-3 mb-4">
         <div class="col-sm-6 col-xl-3">
           <section class="mp-card mp-card-body h-100">
+            <div class="stat-label">Opérateurs configurés</div>
+            <div class="stat-value"><?= count($operateurs ?? []) ?></div>
+            <div class="stat-sub">Principal et partenaires</div>
+          </section>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+          <section class="mp-card mp-card-body h-100">
             <div class="stat-label">Préfixes actifs</div>
             <div class="stat-value"><?= count($prefixes ?? []) ?></div>
-            <div class="stat-sub">
-              <?php if (! empty($prefixes)): ?>
-                <?= esc(implode(', ', array_column($prefixes, 'prefixe'))) ?>
-              <?php else: ?>
-                Aucun préfixe configuré
-              <?php endif; ?>
-            </div>
+            <div class="stat-sub"><?= ! empty($prefixes) ? esc(implode(', ', array_column($prefixes, 'prefixe'))) : 'Aucun préfixe configuré' ?></div>
           </section>
         </div>
-
         <div class="col-sm-6 col-xl-3">
-          <section class="mp-card mp-card-body h-100">
-            <div class="stat-label">Types d’opérations</div>
-            <div class="stat-value"><?= count($types ?? []) ?></div>
-            <div class="stat-sub">
-              <?php if (! empty($types)): ?>
-                <?= esc(implode(', ', array_map(static fn ($type) => ucfirst($type['libelle']), $types))) ?>
-              <?php else: ?>
-                Aucun type configuré
-              <?php endif; ?>
-            </div>
+          <section class="mp-card mp-card-body stat-success h-100">
+            <div class="stat-label">Mes gains du mois</div>
+            <div class="stat-value"><?= number_format((float) ($currentGains['mes_gains'] ?? 0), 0, ',', ' ') ?> Ar</div>
+            <div class="stat-sub">Frais propres + commissions partenaires</div>
           </section>
         </div>
-
         <div class="col-sm-6 col-xl-3">
-          <section class="mp-card mp-card-body h-100">
-            <div class="stat-label">Comptes clients</div>
-            <div class="stat-value"><?= (int) ($clientSummary['total'] ?? 0) ?></div>
-            <div class="stat-sub"><?= (int) ($clientSummary['actifs'] ?? 0) ?> actif(s)</div>
-          </section>
-        </div>
-
-        <div class="col-sm-6 col-xl-3">
-          <section class="mp-card mp-card-body h-100">
-            <div class="stat-label">Gains du mois</div>
-            <div class="stat-value"><?= number_format((float) ($currentGains['total'] ?? 0), 0, ',', ' ') ?> Ar</div>
-            <div class="stat-sub">Retrait + transfert</div>
+          <section class="mp-card mp-card-body stat-warning h-100">
+            <div class="stat-label">À envoyer ce mois</div>
+            <div class="stat-value"><?= number_format((float) ($currentGains['a_reverser'] ?? 0), 0, ',', ' ') ?> Ar</div>
+            <div class="stat-sub">Montant dû aux autres opérateurs</div>
           </section>
         </div>
       </div>
 
-      
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <section class="mp-card h-100">
+            <div class="mp-card-body pb-2">
+              <div class="mp-section-title">Configuration des opérateurs</div>
+              <div class="mp-section-subtitle mt-1">Vue d’ensemble des préfixes et commissions.</div>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-mp mb-0">
+                <thead><tr><th>Opérateur</th><th>Type</th><th class="text-end">Préfixes</th><th class="text-end">Commission</th></tr></thead>
+                <tbody>
+                <?php if (empty($operateurs)): ?>
+                  <tr><td colspan="4" class="text-center text-muted py-4">Aucun opérateur configuré.</td></tr>
+                <?php else: foreach ($operateurs as $operateur): ?>
+                  <tr>
+                    <td class="fw-semibold"><?= esc($operateur['nom']) ?></td>
+                    <td><span class="badge <?= (int) $operateur['est_principal'] === 1 ? 'badge-soft-success' : 'badge-soft-primary' ?>"><?= (int) $operateur['est_principal'] === 1 ? 'Principal' : 'Partenaire' ?></span></td>
+                    <td class="text-end"><?= (int) $operateur['nombre_prefixes'] ?></td>
+                    <td class="text-end"><?= number_format((float) $operateur['pourcentage'], 2, ',', ' ') ?> %</td>
+                  </tr>
+                <?php endforeach; endif; ?>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+        <div class="col-lg-5">
+          <section class="mp-card mp-card-body h-100">
+            <div class="mp-section-title mb-3">Accès rapides</div>
+            <div class="d-grid gap-2">
+              <a class="btn btn-outline-primary text-start" href="<?= site_url('admin/operateurs') ?>"><i class="bi bi-building me-2"></i>Ajouter un opérateur</a>
+              <a class="btn btn-outline-primary text-start" href="<?= site_url('admin/prefixes') ?>"><i class="bi bi-hash me-2"></i>Affecter un préfixe</a>
+              <a class="btn btn-outline-primary text-start" href="<?= site_url('admin/commissions') ?>"><i class="bi bi-percent me-2"></i>Modifier les commissions</a>
+              <a class="btn btn-outline-warning text-start" href="<?= site_url('admin/reversements') ?>"><i class="bi bi-send-check me-2"></i>Voir les montants à envoyer</a>
+            </div>
+          </section>
+        </div>
+      </div>
     </main>
   </div>
 </div>
+<script src="<?= base_url('assets/js/app.js') ?>"></script>
 </body>
 </html>

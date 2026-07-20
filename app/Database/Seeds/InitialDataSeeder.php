@@ -8,82 +8,81 @@ class InitialDataSeeder extends Seeder
 {
     public function run()
     {
-        $this->insererPrefixes();
+        $principalId = $this->insererOperateurPrincipal();
+        $this->insererPrefixes($principalId);
         $this->insererTypesOperations();
-        $this->insererUtilisateur();
+        $this->insererUtilisateur($principalId);
+        $this->insererCommissionPrincipale($principalId);
     }
 
-    private function insererPrefixes(): void
+    private function insererOperateurPrincipal(): int
     {
-        $prefixes = [
-            [
-                'prefixe'    => '033',
-                'date_ajout' => date('Y-m-d H:i:s'),
-            ],
-            [
-                'prefixe'    => '037',
-                'date_ajout' => date('Y-m-d H:i:s'),
-            ],
-        ];
+        $principal = $this->db->table('operateur')
+            ->where('est_principal', 1)
+            ->orderBy('id', 'ASC')
+            ->get()->getRowArray();
 
-        foreach ($prefixes as $prefixe) {
-            $existe = $this->db
-                ->table('prefixe_valable')
-                ->where('prefixe', $prefixe['prefixe'])
-                ->countAllResults();
+        if ($principal !== null) {
+            return (int) $principal['id'];
+        }
 
-            if ($existe === 0) {
-                $this->db
-                    ->table('prefixe_valable')
-                    ->insert($prefixe);
+        $this->db->table('operateur')->insert([
+            'nom'           => 'MobiPay',
+            'est_principal' => 1,
+            'date_ajout'    => date('Y-m-d H:i:s'),
+        ]);
+
+        return (int) $this->db->insertID();
+    }
+
+    private function insererPrefixes(int $principalId): void
+    {
+        foreach (['033', '037'] as $valeur) {
+            $row = $this->db->table('prefixe_valable')->where('prefixe', $valeur)->get()->getRowArray();
+            if ($row === null) {
+                $this->db->table('prefixe_valable')->insert([
+                    'operateur_id' => $principalId,
+                    'prefixe'      => $valeur,
+                    'date_ajout'   => date('Y-m-d H:i:s'),
+                ]);
+            } elseif (empty($row['operateur_id'])) {
+                $this->db->table('prefixe_valable')->where('id', (int) $row['id'])->update(['operateur_id' => $principalId]);
             }
         }
     }
 
     private function insererTypesOperations(): void
     {
-        $typesOperations = [
-            [
-                'libelle' => 'depot',
-            ],
-            [
-                'libelle' => 'retrait',
-            ],
-            [
-                'libelle' => 'transfert',
-            ],
-        ];
-
-        foreach ($typesOperations as $typeOperation) {
-            $existe = $this->db
-                ->table('type_operation')
-                ->where('libelle', $typeOperation['libelle'])
-                ->countAllResults();
-
-            if ($existe === 0) {
-                $this->db
-                    ->table('type_operation')
-                    ->insert($typeOperation);
+        foreach (['depot', 'retrait', 'transfert'] as $libelle) {
+            if ($this->db->table('type_operation')->where('libelle', $libelle)->countAllResults() === 0) {
+                $this->db->table('type_operation')->insert(['libelle' => $libelle]);
             }
         }
     }
 
-    private function insererUtilisateur(): void
+    private function insererUtilisateur(int $principalId): void
     {
-        $nombreUtilisateurs = $this->db
-            ->table('user')
-            ->countAllResults();
+        $user = $this->db->table('user')->orderBy('id', 'ASC')->get()->getRowArray();
+        if ($user === null) {
+            $this->db->table('user')->insert([
+                'operateur_id' => $principalId,
+                'password'     => password_hash('operateur123', PASSWORD_DEFAULT),
+                'date_ajout'   => date('Y-m-d H:i:s'),
+            ]);
+        } elseif (empty($user['operateur_id'])) {
+            $this->db->table('user')->where('id', (int) $user['id'])->update(['operateur_id' => $principalId]);
+        }
+    }
 
-        if ($nombreUtilisateurs === 0) {
-            $this->db
-                ->table('user')
-                ->insert([
-                    'password'   => password_hash(
-                        'operateur123',
-                        PASSWORD_DEFAULT
-                    ),
-                    'date_ajout' => date('Y-m-d H:i:s'),
-                ]);
+    private function insererCommissionPrincipale(int $principalId): void
+    {
+        $row = $this->db->table('commission_operateur')->where('operateur_id', $principalId)->get()->getRowArray();
+        if ($row === null) {
+            $this->db->table('commission_operateur')->insert([
+                'operateur_id' => $principalId,
+                'pourcentage'  => 100,
+                'date_ajout'   => date('Y-m-d H:i:s'),
+            ]);
         }
     }
 }

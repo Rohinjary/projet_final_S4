@@ -3,117 +3,69 @@
 namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
-use App\Services\UserService;
-use App\Services\PrefixeValableService;
-use App\Services\TypeOperationService;
 use App\Services\BaremeFraisService;
+use App\Services\OperateurService;
+use App\Services\PrefixeValableService;
 use App\Services\RapportService;
+use App\Services\TypeOperationService;
+use App\Services\UserService;
 
 class AuthController extends BaseController
 {
-    /**
-     * Affiche la page de connexion sans ouvrir la base de données.
-     * Cela permet à la vue de s'afficher même avant les migrations/seeds.
-     */
-    public function index()
-    {
-        if (session()->get('operator_logged_in') === true) {
-            return redirect()->to(site_url('admin/dashboard'));
-        }
-
-        if (session()->get('client_logged_in') === true) {
-            return redirect()->to(site_url('client/dashboard'));
-        }
-
-        return view('Admin/login', [
-            'title' => 'Connexion',
-        ]);
-    }
-
-
     public function operatorForm()
     {
         if (session()->get('operator_logged_in') === true) {
             return redirect()->to(site_url('admin/dashboard'));
         }
 
-        return view('Admin/login', [
-            'title' => 'Connexion opérateur',
-        ]);
+        return view('Admin/login', ['title' => 'Connexion opérateur']);
     }
 
     public function operatorLogin()
     {
-        $password = trim((string) $this->request->getPost('password'));
+        $password = (string) $this->request->getPost('password');
 
-        if ($password === '') {
-            return redirect()->to(site_url('/'))
+        if (trim($password) === '') {
+            return redirect()->to(site_url('admin/login'))
                 ->withInput()
-                ->with('login_mode', 'operator')
-                ->with('error', 'Veuillez saisir le mot de passe.');
+                ->with('error', 'Veuillez saisir le mot de passe opérateur.');
         }
 
-        // Connexion à la base uniquement au moment de la vérification.
-        $userService = new UserService();
-
-        if (! $userService->verifyUser($password)) {
-            return redirect()->to(site_url('/'))
+        $auth = (new UserService())->authenticate($password);
+        if ($auth === null || $auth['operateur'] === null) {
+            return redirect()->to(site_url('admin/login'))
                 ->withInput()
-                ->with('login_mode', 'operator')
                 ->with('error', 'Mot de passe opérateur incorrect.');
         }
 
+        $operateur = $auth['operateur'];
         session()->regenerate();
         session()->set([
-            'operator_logged_in' => true,
-            'operator_login_at'  => date('Y-m-d H:i:s'),
+            'operator_logged_in'   => true,
+            'operator_user_id'     => (int) $auth['user']['id'],
+            'operator_id'          => (int) $operateur['id'],
+            'operator_name'        => (string) $operateur['nom'],
+            'operator_is_principal'=> (int) $operateur['est_principal'] === 1,
+            'operator_login_at'    => date('Y-m-d H:i:s'),
         ]);
 
         return redirect()->to(site_url('admin/dashboard'));
     }
 
-    public function clientLogin()
-    {
-        $numero = preg_replace('/\D+/', '', (string) $this->request->getPost('numero')) ?? '';
-
-        if (str_starts_with($numero, '261')) {
-            $numero = '0' . substr($numero, 3);
-        }
-
-        if (! preg_match('/^(033|037)\d{7}$/', $numero)) {
-            return redirect()->to(site_url('/'))
-                ->withInput()
-                ->with('login_mode', 'client')
-                ->with('error', 'Le numéro doit contenir 10 chiffres et commencer par 033 ou 037.');
-        }
-
-        session()->regenerate();
-        session()->set([
-            'client_logged_in' => true,
-            'client_numero'    => $numero,
-        ]);
-
-        return redirect()->to(site_url('client/dashboard'));
-    }
-
     public function adminDashboard()
     {
         if (session()->get('operator_logged_in') !== true) {
-            return redirect()->to(site_url('/'))
-                ->with('login_mode', 'operator')
+            return redirect()->to(site_url('admin/login'))
                 ->with('error', 'Connectez-vous à l’espace opérateur.');
         }
 
-        $prefixeService = new PrefixeValableService();
-        $typeService = new TypeOperationService();
-        $baremeService = new BaremeFraisService();
+        $prefixes = (new PrefixeValableService())->getAllWithOperateur();
+        $types = (new TypeOperationService())->getAllTypeOperation();
+        $latestBaremes = (new BaremeFraisService())->getLatestBaremesGroupedByType();
         $rapportService = new RapportService();
-
-        $prefixes = $prefixeService->getAllPrefixeValable();
-        $types = $typeService->getAllTypeOperation();
-        $latestBaremes = $baremeService->getLatestBaremesGroupedByType();
         $clientSummary = $rapportService->getClientSummary();
         $currentGains = $rapportService->getGains((int) date('Y'), (int) date('m'));
+        $operateurs = (new OperateurService())->getAllWithConfiguration();
 
         return view('Admin/dashboard', [
             'title'         => 'Tableau de bord opérateur',
@@ -122,28 +74,19 @@ class AuthController extends BaseController
             'latestBaremes' => $latestBaremes,
             'clientSummary' => $clientSummary,
             'currentGains'  => $currentGains,
-        ]);
-    }
-
-    public function clientDashboard()
-    {
-        if (session()->get('client_logged_in') !== true) {
-            return redirect()->to(site_url('/'))
-                ->with('login_mode', 'client')
-                ->with('error', 'Connectez-vous avec votre numéro.');
-        }
-
-        return view('Client/dashboard', [
-            'title'  => 'Mon compte',
-            'numero' => session()->get('client_numero'),
+            'operateurs'    => $operateurs,
         ]);
     }
 
     public function logout()
     {
-        session()->destroy();
+        session()->remove([
+            'operator_logged_in', 'operator_user_id', 'operator_id', 'operator_name',
+            'operator_is_principal', 'operator_login_at',
+        ]);
+        session()->regenerate();
 
-        return redirect()->to(site_url('/'))
-            ->with('success', 'Vous êtes déconnecté.');
+        return redirect()->to(site_url('admin/login'))
+            ->with('success', 'Vous êtes déconnecté de l’espace opérateur.');
     }
 }
