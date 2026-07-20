@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Controllers;
+namespace App\Controllers\Client;
 
+use App\Controllers\BaseController;
 use App\Services\ClientService;
 use App\Services\OperationService;
 use App\Services\PrefixeValableService;
@@ -36,14 +37,11 @@ class ClientController extends BaseController
         return $numero;
     }
 
-    // Cherche l'id d'un type d'operation a partir de son libelle
-    // (le service partage n'a pas de methode dediee, on filtre ici)
     private function getTypeOperationIdParLibelle(string $libelle): ?int
     {
-        $types = $this->typeOperationService->getAllTypeOperation();
-        foreach ($types as $t) {
-            if ($t->libelle === $libelle) {
-                return (int) $t->id;
+        foreach ($this->typeOperationService->getAllTypeOperation() as $t) {
+            if ($t['libelle'] === $libelle) {
+                return (int) $t['id'];
             }
         }
         return null;
@@ -51,78 +49,87 @@ class ClientController extends BaseController
 
     private function prefixeEstValide(string $prefixe): bool
     {
-        $prefixes = $this->prefixeValableService->getAllPrefixeValable();
-        foreach ($prefixes as $p) {
-            if ($p->prefixe === $prefixe) {
+        foreach ($this->prefixeValableService->getAllPrefixeValable() as $p) {
+            if ($p['prefixe'] === $prefixe) {
                 return true;
             }
         }
         return false;
     }
 
+    private function traiterConnexion()
+    {
+        $prefixe = trim((string) $this->request->getPost('prefixe'));
+        $suite   = trim((string) $this->request->getPost('suite'));
+        $numero  = trim((string) $this->request->getPost('numero'));
+
+        if ($prefixe !== '' || $suite !== '') {
+            if (!$this->prefixeEstValide($prefixe)) {
+                session()->setFlashdata('erreur', 'Prefixe non valable.');
+                session()->setFlashdata('prefixe_saisi', $prefixe);
+                session()->setFlashdata('suite_saisie', $suite);
+                return redirect()->to('/client/login');
+            }
+
+            if (!ctype_digit($suite) || strlen($suite) !== 7) {
+                session()->setFlashdata('erreur', 'Le reste du numero doit contenir 7 chiffres.');
+                session()->setFlashdata('prefixe_saisi', $prefixe);
+                session()->setFlashdata('suite_saisie', $suite);
+                return redirect()->to('/client/login');
+            }
+
+            $numero = $prefixe . $suite;
+        }
+
+        if (!ctype_digit($numero) || strlen($numero) !== 10) {
+            session()->setFlashdata('erreur', 'Le numero doit contenir 10 chiffres.');
+            session()->setFlashdata('prefixe_saisi', $prefixe);
+            session()->setFlashdata('suite_saisie', $suite);
+            session()->setFlashdata('numero_saisi', $numero);
+            return redirect()->to('/client/login');
+        }
+
+        $client = $this->clientService->existeParNumero($numero);
+
+        if (!$client) {
+            $this->clientService->creerCompte($numero);
+        }
+
+        session()->set('client_numero', $numero);
+        return redirect()->to('/client/accueil');
+    }
+
     // ---------- LOGIN ----------
 
     public function login()
     {
-        return view('Client/login');
+        return view('client/login', [
+            'prefixes' => $this->prefixeValableService->getAllPrefixeValable(),
+        ]);
     }
 
     public function authentifier()
     {
-        $numero = trim($this->request->getPost('numero'));
-
-        $client = $this->clientService->existeParNumero($numero);
-
-        if ($client) {
-            session()->set('client_numero', $client['numero']);
-            return redirect()->to('/client/accueil');
-        }
-
-        session()->setFlashdata('numero_saisi', $numero);
-        return redirect()->to('/client/choix-prefixe');
+        return $this->traiterConnexion();
     }
 
     // ---------- CREATION DE COMPTE ----------
 
     public function choixPrefixe()
     {
-        $data['prefixes']     = $this->prefixeValableService->getAllPrefixeValable();
-        $data['numero_saisi'] = session()->getFlashdata('numero_saisi');
-        return view('Client/choixPrefixe', $data);
+        return redirect()->to('/client/login');
     }
 
     public function validerNouveauNumero()
     {
-        $prefixe = trim($this->request->getPost('prefixe'));
-        $suite   = trim($this->request->getPost('suite'));
-        $numero  = $prefixe . $suite;
-
-        if (!$this->prefixeEstValide($prefixe)) {
-            session()->setFlashdata('erreur', 'Prefixe non valable.');
-            return redirect()->to('/client/choix-prefixe');
-        }
-
-        if (strlen($numero) !== 10) {
-            session()->setFlashdata('erreur', 'Le numero doit contenir 10 chiffres.');
-            return redirect()->to('/client/choix-prefixe');
-        }
-
-        if ($this->clientService->existeParNumero($numero)) {
-            session()->setFlashdata('erreur', 'Ce numero est deja utilise.');
-            return redirect()->to('/client/choix-prefixe');
-        }
-
-        $this->clientService->creerCompte($numero);
-        session()->set('client_numero', $numero);
-
-        return redirect()->to('/client/info');
+        return $this->traiterConnexion();
     }
 
     // ---------- INFOS PERSONNELLES ----------
 
     public function info()
     {
-        return view('Client/info');
+        return view('client/info');
     }
 
     public function enregistrerInfo()
@@ -150,10 +157,16 @@ class ClientController extends BaseController
         $numero = $this->verifierSession();
         if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) return $numero;
 
-        $client = $this->clientService->existeParNumero($numero);
-        $solde  = $this->operationService->calculerSolde($numero);
+        $client     = $this->clientService->existeParNumero($numero);
+        $solde      = $this->operationService->calculerSolde($numero);
+        $historique = array_slice($this->operationService->getHistorique($numero), 0, 5);
 
-        return view('Client/accueil', ['client' => $client, 'solde' => $solde]);
+        return view('client/dashboard', [
+            'client'     => $client,
+            'solde'      => $solde,
+            'numero'     => $numero,
+            'historique' => $historique,
+        ]);
     }
 
     // ---------- DEPOT ----------
@@ -163,7 +176,8 @@ class ClientController extends BaseController
         $numero = $this->verifierSession();
         if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) return $numero;
 
-        return view('Client/depot');
+        $solde = $this->operationService->calculerSolde($numero);
+        return view('client/depot', ['solde' => $solde]);
     }
 
     public function traiterDepot()
@@ -171,21 +185,21 @@ class ClientController extends BaseController
         $numero = $this->verifierSession();
         if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) return $numero;
 
-        $montant = (float) $this->request->getPost('montant');
+        $montant = (float) $this->request->getPost('amount');
 
         if ($montant <= 0) {
             session()->setFlashdata('erreur', 'Montant invalide.');
             return redirect()->to('/client/depot');
         }
 
-        $typeId = $this->getTypeOperationIdParLibelle('depot');
+        $typeId     = $this->getTypeOperationIdParLibelle('depot');
         $maintenant = (new DateTime())->format('Y-m-d H:i:s');
-        $bareme = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
-        $frais  = $bareme ? (float) $bareme->montant_frais : 0;
+        $bareme     = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
+        $frais      = $bareme ? (float) $bareme->montant_frais : 0;
 
         $this->operationService->enregistrer($numero, $typeId, $montant, $frais);
 
-        session()->setFlashdata('succes', 'Depot effectue avec succes.');
+        session()->setFlashdata('succes', 'Depot de ' . number_format($montant, 0, ',', ' ') . ' Ar effectue avec succes.');
         return redirect()->to('/client/accueil');
     }
 
@@ -196,7 +210,8 @@ class ClientController extends BaseController
         $numero = $this->verifierSession();
         if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) return $numero;
 
-        return view('Client/retrait');
+        $solde = $this->operationService->calculerSolde($numero);
+        return view('client/retrait', ['solde' => $solde]);
     }
 
     public function traiterRetrait()
@@ -204,16 +219,16 @@ class ClientController extends BaseController
         $numero = $this->verifierSession();
         if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) return $numero;
 
-        $montant = (float) $this->request->getPost('montant');
+        $montant = (float) $this->request->getPost('amount');
 
         if ($montant <= 0) {
             session()->setFlashdata('erreur', 'Montant invalide.');
             return redirect()->to('/client/retrait');
         }
 
-        $typeId = $this->getTypeOperationIdParLibelle('retrait');
+        $typeId     = $this->getTypeOperationIdParLibelle('retrait');
         $maintenant = (new DateTime())->format('Y-m-d H:i:s');
-        $bareme = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
+        $bareme     = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
 
         if ($bareme === null) {
             session()->setFlashdata('erreur', 'Aucun bareme de frais ne correspond a ce montant.');
@@ -230,7 +245,7 @@ class ClientController extends BaseController
 
         $this->operationService->enregistrer($numero, $typeId, $montant, $frais);
 
-        session()->setFlashdata('succes', 'Retrait effectue avec succes.');
+        session()->setFlashdata('succes', 'Retrait de ' . number_format($montant, 0, ',', ' ') . ' Ar effectue avec succes.');
         return redirect()->to('/client/accueil');
     }
 
@@ -241,7 +256,8 @@ class ClientController extends BaseController
         $numero = $this->verifierSession();
         if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) return $numero;
 
-        return view('Client/transfert');
+        $solde = $this->operationService->calculerSolde($numero);
+        return view('client/transfert', ['solde' => $solde]);
     }
 
     public function traiterTransfert()
@@ -249,8 +265,8 @@ class ClientController extends BaseController
         $numero = $this->verifierSession();
         if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) return $numero;
 
-        $numeroDest = trim($this->request->getPost('numero_destinataire'));
-        $montant    = (float) $this->request->getPost('montant');
+        $numeroDest = trim($this->request->getPost('recipient'));
+        $montant    = (float) $this->request->getPost('amount');
 
         if ($numeroDest === $numero) {
             session()->setFlashdata('erreur', 'Impossible de transferer vers son propre numero.');
@@ -267,9 +283,9 @@ class ClientController extends BaseController
             return redirect()->to('/client/transfert');
         }
 
-        $typeId = $this->getTypeOperationIdParLibelle('transfert');
+        $typeId     = $this->getTypeOperationIdParLibelle('transfert');
         $maintenant = (new DateTime())->format('Y-m-d H:i:s');
-        $bareme = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
+        $bareme     = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
 
         if ($bareme === null) {
             session()->setFlashdata('erreur', 'Aucun bareme de frais ne correspond a ce montant.');
@@ -286,7 +302,7 @@ class ClientController extends BaseController
 
         $this->operationService->enregistrer($numero, $typeId, $montant, $frais, $numeroDest);
 
-        session()->setFlashdata('succes', 'Transfert effectue avec succes.');
+        session()->setFlashdata('succes', 'Transfert de ' . number_format($montant, 0, ',', ' ') . ' Ar vers ' . $numeroDest . ' effectue avec succes.');
         return redirect()->to('/client/accueil');
     }
 
@@ -302,7 +318,7 @@ class ClientController extends BaseController
         $historique = $this->operationService->getHistorique($numero, $typeIdGet ? (int) $typeIdGet : null);
         $types      = $this->typeOperationService->getAllTypeOperation();
 
-        return view('Client/historique', [
+        return view('client/historique', [
             'historique' => $historique,
             'types'      => $types,
             'numero'     => $numero,
