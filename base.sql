@@ -1,7 +1,9 @@
 create table prefixe_valable(
     id int primary key auto_increment,
+    operateur_id int not null,
     prefixe varchar(3) not null,
-    date_ajout timestamp default current_timestamp
+    date_ajout timestamp default current_timestamp,
+    foreign key (operateur_id) references operateur(id)
 );
 
 create table type_operation(
@@ -40,9 +42,25 @@ create table operation(
     foreign key (destinataire_numero) references client(numero),
 )
 
-create table user(
-    id int primary key auto_increment,
-    password varchar(255) not null,
-    date_ajout timestamp default current_timestamp
+CREATE TABLE operateur (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nom VARCHAR(50) NOT NULL UNIQUE,
+    est_principal INTEGER NOT NULL DEFAULT 0,
+    date_ajout DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+create table user(
+    id int primary key auto_increment,
+    operateur_id int not null,
+    password varchar(255) not null,
+    date_ajout timestamp default current_timestamp,
+    foreign key (operateur_id) references operateur(id)
+);
+
+create table commission_operateur(
+    id int primary key auto_increment,
+    operateur_id int not null,
+    pourcentage numeric not null,
+    date_ajout timestamp default current_timestamp,
+    foreign key (operateur_id) references operateur(id)
+);
