@@ -18,7 +18,8 @@
 <div class="brand-subtitle">Facultatif</div>
 </div>
 
-<form action="<?= base_url('client/enregistrer-info') ?>" method="post">
+<form action="<?= base_url('client/enregistrer-info') ?>
+<?= csrf_field() ?>" method="post">
 <div class="mb-3">
 <label class="form-label" for="nom">Nom</label>
 <input class="form-control" id="nom" name="nom" type="text">

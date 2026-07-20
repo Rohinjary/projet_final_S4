@@ -37,7 +37,8 @@
 <div class="stat-value"><?= number_format($solde, 0, ',', ' ') ?> Ar</div>
 </div>
 
-<form action="<?= base_url('client/traiter-retrait') ?>" method="post">
+<form action="<?= base_url('client/traiter-retrait') ?>
+<?= csrf_field() ?>" method="post">
 <div class="mb-3">
 <label class="form-label" for="amount">Montant a retirer (Ar)</label>
 <input class="form-control" id="amount" name="amount" type="number" min="100" max="2000000" step="100" placeholder="Ex. 20 000" required>

@@ -9,22 +9,23 @@ use App\Services\OperationService;
 use App\Services\PrefixeValableService;
 use App\Services\TypeOperationService;
 use DateTime;
+use CodeIgniter\HTTP\RedirectResponse;
 
 class ClientController extends BaseController
 {
-    protected ClientService $clientService;
-    protected OperationService $operationService;
-    protected PrefixeValableService $prefixeValableService;
-    protected TypeOperationService $typeOperationService;
-    protected BaremeFraisService $baremeFraisService;
+    private ClientService $clientService;
+    private OperationService $operationService;
+    private PrefixeValableService $prefixeValableService;
+    private TypeOperationService $typeOperationService;
+    private BaremeFraisService $baremeFraisService;
 
     public function __construct()
     {
-        $this->clientService         = new ClientService();
-        $this->operationService      = new OperationService();
+        $this->clientService = new ClientService();
+        $this->operationService = new OperationService();
         $this->prefixeValableService = new PrefixeValableService();
-        $this->typeOperationService  = new TypeOperationService();
-        $this->baremeFraisService    = new BaremeFraisService();
+        $this->typeOperationService = new TypeOperationService();
+        $this->baremeFraisService = new BaremeFraisService();
     }
 
     private function verifierSession()
@@ -154,8 +155,12 @@ class ClientController extends BaseController
 
     public function login()
     {
+        if (session()->get('client_numero')) {
+            return redirect()->to(site_url('client/accueil'));
+        }
+
         return view('client/login', [
-            'prefixes' => $this->prefixeValableService->getAllPrefixeValable(),
+            'prefixes' => $this->prefixeValableService->getAllWithOperateur(),
         ]);
     }
 
@@ -166,7 +171,7 @@ class ClientController extends BaseController
 
     public function choixPrefixe()
     {
-        return redirect()->to('/client/login');
+        return redirect()->to(site_url('client/login'));
     }
 
     public function validerNouveauNumero()
@@ -176,6 +181,9 @@ class ClientController extends BaseController
 
     public function info()
     {
+        if ($redirect = $this->verifierSession()) {
+            return $redirect;
+        }
         return view('client/info');
     }
 
@@ -190,13 +198,15 @@ class ClientController extends BaseController
         $prenom = trim((string) $this->request->getPost('prenom')) ?: null;
 
         $this->clientService->updateInfos($numero, $nom, $prenom);
-
-        return redirect()->to('/client/accueil');
+        return redirect()->to(site_url('client/accueil'));
     }
 
     public function passerInfo()
     {
-        return redirect()->to('/client/accueil');
+        if ($redirect = $this->verifierSession()) {
+            return $redirect;
+        }
+        return redirect()->to(site_url('client/accueil'));
     }
 
     public function accueil()
@@ -211,10 +221,10 @@ class ClientController extends BaseController
         $historique = array_slice($this->operationService->getHistorique($numero), 0, 5);
 
         return view('client/dashboard', [
-            'client'     => $client,
-            'solde'      => $solde,
+            'client'     => $this->clientService->existeParNumero($numero),
+            'solde'      => $this->operationService->calculerSolde($numero),
             'numero'     => $numero,
-            'historique' => $historique,
+            'historique' => array_slice($this->operationService->getHistorique($numero), 0, 5),
         ]);
     }
 
@@ -239,8 +249,7 @@ class ClientController extends BaseController
         $montant = (float) $this->request->getPost('amount');
 
         if ($montant <= 0) {
-            session()->setFlashdata('erreur', 'Montant invalide.');
-            return redirect()->to('/client/depot');
+            return $this->clientError('client/depot', 'Montant invalide.');
         }
 
         $typeId     = $this->getTypeOperationIdParLibelle('depot');
@@ -248,10 +257,10 @@ class ClientController extends BaseController
         $bareme     = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
         $frais      = $bareme ? (float) $bareme['montant_frais'] : 0.0;
 
+        $frais = (float) $bareme['montant_frais'];
         $this->operationService->enregistrer($numero, $typeId, $montant, $frais);
-
-        session()->setFlashdata('succes', 'Depot de ' . number_format($montant, 0, ',', ' ') . ' Ar effectue avec succes.');
-        return redirect()->to('/client/accueil');
+        session()->setFlashdata('succes', 'Dépôt de ' . number_format($montant, 0, ',', ' ') . ' Ar effectué avec succès.');
+        return redirect()->to(site_url('client/accueil'));
     }
 
     public function retrait()
@@ -275,17 +284,16 @@ class ClientController extends BaseController
         $montant = (float) $this->request->getPost('amount');
 
         if ($montant <= 0) {
-            session()->setFlashdata('erreur', 'Montant invalide.');
-            return redirect()->to('/client/retrait');
+            return $this->clientError('client/retrait', 'Montant invalide.');
         }
 
-        $typeId     = $this->getTypeOperationIdParLibelle('retrait');
-        $maintenant = (new DateTime())->format('Y-m-d H:i:s');
-        $bareme     = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
-
+        $typeId = $this->getTypeOperationIdParLibelle('retrait');
+        if ($typeId === null) {
+            return $this->clientError('client/retrait', 'Le type d’opération retrait n’est pas configuré.');
+        }
+        $bareme = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, date('Y-m-d H:i:s'));
         if ($bareme === null) {
-            session()->setFlashdata('erreur', 'Aucun bareme de frais ne correspond a ce montant.');
-            return redirect()->to('/client/retrait');
+            return $this->clientError('client/retrait', 'Aucun barème de frais ne correspond à ce montant.');
         }
 
         $frais = (float) $bareme['montant_frais'];
@@ -297,9 +305,8 @@ class ClientController extends BaseController
         }
 
         $this->operationService->enregistrer($numero, $typeId, $montant, $frais);
-
-        session()->setFlashdata('succes', 'Retrait de ' . number_format($montant, 0, ',', ' ') . ' Ar effectue avec succes.');
-        return redirect()->to('/client/accueil');
+        session()->setFlashdata('succes', 'Retrait de ' . number_format($montant, 0, ',', ' ') . ' Ar effectué avec succès.');
+        return redirect()->to(site_url('client/accueil'));
     }
 
     public function transfert()
@@ -432,12 +439,9 @@ class ClientController extends BaseController
 
         $typeIdGet = $this->request->getGet('type') ?: null;
 
-        $historique = $this->operationService->getHistorique($numero, $typeIdGet ? (int) $typeIdGet : null);
-        $types      = $this->typeOperationService->getAllTypeOperation();
-
         return view('client/historique', [
-            'historique' => $historique,
-            'types'      => $types,
+            'historique' => $this->operationService->getHistorique($numero, $typeIdGet ? (int) $typeIdGet : null),
+            'types'      => $this->typeOperationService->getAllTypeOperation(),
             'numero'     => $numero,
             'typeActif'  => $typeIdGet,
         ]);
@@ -445,7 +449,8 @@ class ClientController extends BaseController
 
     public function deconnexion()
     {
-        session()->remove('client_numero');
-        return redirect()->to('/client/login');
+        session()->remove(['client_numero', 'client_logged_in']);
+        session()->regenerate();
+        return redirect()->to(site_url('client/login'))->with('success', 'Vous êtes déconnecté.');
     }
 }
