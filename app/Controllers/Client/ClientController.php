@@ -8,6 +8,7 @@ use App\Services\ClientService;
 use App\Services\OperationService;
 use App\Services\PrefixeValableService;
 use App\Services\TypeOperationService;
+use DateTime;
 use CodeIgniter\HTTP\RedirectResponse;
 
 class ClientController extends BaseController
@@ -25,6 +26,131 @@ class ClientController extends BaseController
         $this->prefixeValableService = new PrefixeValableService();
         $this->typeOperationService = new TypeOperationService();
         $this->baremeFraisService = new BaremeFraisService();
+    }
+
+    private function verifierSession()
+    {
+        $numero = session()->get('client_numero');
+        if (! $numero) {
+            return redirect()->to('/client/login');
+        }
+
+        return $numero;
+    }
+
+    private function getTypeOperationIdParLibelle(string $libelle): ?int
+    {
+        foreach ($this->typeOperationService->getAllTypeOperation() as $typeOperation) {
+            if (($typeOperation['libelle'] ?? null) === $libelle) {
+                return (int) $typeOperation['id'];
+            }
+        }
+
+        return null;
+    }
+
+    private function prefixeEstValide(string $prefixe): bool
+    {
+        foreach ($this->prefixeValableService->getAllPrefixeValable() as $prefixeValable) {
+            if (($prefixeValable['prefixe'] ?? null) === $prefixe) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function getOperateurIdParNumero(string $numero): ?int
+    {
+        $prefixe = substr($numero, 0, 3);
+        $prefixeValable = $this->prefixeValableService->getPrefixeValableByPrefixe($prefixe);
+
+        if (! is_array($prefixeValable) || ! array_key_exists('operateur_id', $prefixeValable) || $prefixeValable['operateur_id'] === null) {
+            return null;
+        }
+
+        return (int) $prefixeValable['operateur_id'];
+    }
+
+    private function memeOperateur(string $numeroA, string $numeroB): bool
+    {
+        $operateurA = $this->getOperateurIdParNumero($numeroA);
+        $operateurB = $this->getOperateurIdParNumero($numeroB);
+
+        if ($operateurA !== null && $operateurB !== null) {
+            return $operateurA === $operateurB;
+        }
+
+        return substr($numeroA, 0, 3) === substr($numeroB, 0, 3);
+    }
+
+    private function extraireDestinataires(string $valeur): array
+    {
+        $valeur = trim(str_replace(["\r\n", "\r"], "\n", $valeur));
+
+        if ($valeur === '') {
+            return [];
+        }
+
+        $fragments = preg_split('/[\s,;]+/', $valeur, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $destinataires = [];
+
+        foreach ($fragments as $fragment) {
+            $numero = trim($fragment);
+            if ($numero !== '') {
+                $destinataires[] = $numero;
+            }
+        }
+
+        return array_values($destinataires);
+    }
+
+    private function transfertAvecErreur(string $message)
+    {
+        session()->setFlashdata('erreur', $message);
+        return redirect()->to('/client/transfert')->withInput();
+    }
+
+    private function traiterConnexion()
+    {
+        $prefixe = trim((string) $this->request->getPost('prefixe'));
+        $suite   = trim((string) $this->request->getPost('suite'));
+        $numero  = trim((string) $this->request->getPost('numero'));
+
+        if ($prefixe !== '' || $suite !== '') {
+            if (! $this->prefixeEstValide($prefixe)) {
+                session()->setFlashdata('erreur', 'Prefixe non valable.');
+                session()->setFlashdata('prefixe_saisi', $prefixe);
+                session()->setFlashdata('suite_saisie', $suite);
+                return redirect()->to('/client/login');
+            }
+
+            if (! ctype_digit($suite) || strlen($suite) !== 7) {
+                session()->setFlashdata('erreur', 'Le reste du numero doit contenir 7 chiffres.');
+                session()->setFlashdata('prefixe_saisi', $prefixe);
+                session()->setFlashdata('suite_saisie', $suite);
+                return redirect()->to('/client/login');
+            }
+
+            $numero = $prefixe . $suite;
+        }
+
+        if (! ctype_digit($numero) || strlen($numero) !== 10) {
+            session()->setFlashdata('erreur', 'Le numero doit contenir 10 chiffres.');
+            session()->setFlashdata('prefixe_saisi', $prefixe);
+            session()->setFlashdata('suite_saisie', $suite);
+            session()->setFlashdata('numero_saisi', $numero);
+            return redirect()->to('/client/login');
+        }
+
+        $client = $this->clientService->existeParNumero($numero);
+        if (! $client) {
+            $this->clientService->creerCompte($numero);
+        }
+
+        session()->set('client_numero', $numero);
+
+        return redirect()->to('/client/accueil');
     }
 
     public function login()
@@ -63,12 +189,14 @@ class ClientController extends BaseController
 
     public function enregistrerInfo()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
-        $numero = (string) session()->get('client_numero');
-        $nom = trim((string) $this->request->getPost('nom')) ?: null;
+
+        $nom    = trim((string) $this->request->getPost('nom')) ?: null;
         $prenom = trim((string) $this->request->getPost('prenom')) ?: null;
+
         $this->clientService->updateInfos($numero, $nom, $prenom);
         return redirect()->to(site_url('client/accueil'));
     }
@@ -83,10 +211,14 @@ class ClientController extends BaseController
 
     public function accueil()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
-        $numero = (string) session()->get('client_numero');
+
+        $client     = $this->clientService->existeParNumero($numero);
+        $solde      = $this->operationService->calculerSolde($numero);
+        $historique = array_slice($this->operationService->getHistorique($numero), 0, 5);
 
         return view('client/dashboard', [
             'client'     => $this->clientService->existeParNumero($numero),
@@ -98,32 +230,32 @@ class ClientController extends BaseController
 
     public function depot()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
-        $numero = (string) session()->get('client_numero');
-        return view('client/depot', ['solde' => $this->operationService->calculerSolde($numero)]);
+
+        $solde = $this->operationService->calculerSolde($numero);
+        return view('client/depot', ['solde' => $solde]);
     }
 
     public function traiterDepot()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
-        $numero = (string) session()->get('client_numero');
-        $montant = $this->normalizeAmount($this->request->getPost('amount'));
+
+        $montant = (float) $this->request->getPost('amount');
+
         if ($montant <= 0) {
             return $this->clientError('client/depot', 'Montant invalide.');
         }
 
-        $typeId = $this->getTypeOperationIdParLibelle('depot');
-        if ($typeId === null) {
-            return $this->clientError('client/depot', 'Le type d’opération dépôt n’est pas configuré.');
-        }
-        $bareme = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, date('Y-m-d H:i:s'));
-        if ($bareme === null) {
-            return $this->clientError('client/depot', 'Aucun barème de frais ne correspond à ce montant.');
-        }
+        $typeId     = $this->getTypeOperationIdParLibelle('depot');
+        $maintenant = (new DateTime())->format('Y-m-d H:i:s');
+        $bareme     = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
+        $frais      = $bareme ? (float) $bareme['montant_frais'] : 0.0;
 
         $frais = (float) $bareme['montant_frais'];
         $this->operationService->enregistrer($numero, $typeId, $montant, $frais);
@@ -133,20 +265,24 @@ class ClientController extends BaseController
 
     public function retrait()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
-        $numero = (string) session()->get('client_numero');
-        return view('client/retrait', ['solde' => $this->operationService->calculerSolde($numero)]);
+
+        $solde = $this->operationService->calculerSolde($numero);
+        return view('client/retrait', ['solde' => $solde]);
     }
 
     public function traiterRetrait()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
-        $numero = (string) session()->get('client_numero');
-        $montant = $this->normalizeAmount($this->request->getPost('amount'));
+
+        $montant = (float) $this->request->getPost('amount');
+
         if ($montant <= 0) {
             return $this->clientError('client/retrait', 'Montant invalide.');
         }
@@ -161,8 +297,11 @@ class ClientController extends BaseController
         }
 
         $frais = (float) $bareme['montant_frais'];
-        if ($this->operationService->calculerSolde($numero) < ($montant + $frais)) {
-            return $this->clientError('client/retrait', 'Solde insuffisant pour effectuer ce retrait.');
+        $solde = $this->operationService->calculerSolde($numero);
+
+        if ($solde < ($montant + $frais)) {
+            session()->setFlashdata('erreur', 'Solde insuffisant pour effectuer ce retrait.');
+            return redirect()->to('/client/retrait');
         }
 
         $this->operationService->enregistrer($numero, $typeId, $montant, $frais);
@@ -172,60 +311,148 @@ class ClientController extends BaseController
 
     public function transfert()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
-        $numero = (string) session()->get('client_numero');
-        return view('client/transfert', ['solde' => $this->operationService->calculerSolde($numero)]);
+
+        $solde = $this->operationService->calculerSolde($numero);
+        return view('client/transfert', ['solde' => $solde]);
     }
 
     public function traiterTransfert()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
-        }
-        $numero = (string) session()->get('client_numero');
-        $numeroDest = $this->normalizePhone((string) $this->request->getPost('recipient'));
-        $montant = $this->normalizeAmount($this->request->getPost('amount'));
-
-        if (! preg_match('/^0\d{9}$/', $numeroDest) || ! $this->prefixeEstValide(substr($numeroDest, 0, 3))) {
-            return $this->clientError('client/transfert', 'Le numéro destinataire ou son préfixe est invalide.');
-        }
-        if ($numeroDest === $numero) {
-            return $this->clientError('client/transfert', 'Impossible de transférer vers votre propre numéro.');
-        }
-        if (! $this->clientService->existeParNumero($numeroDest)) {
-            return $this->clientError('client/transfert', 'Numéro destinataire introuvable.');
-        }
-        if ($montant <= 0) {
-            return $this->clientError('client/transfert', 'Montant invalide.');
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
 
-        $typeId = $this->getTypeOperationIdParLibelle('transfert');
-        if ($typeId === null) {
-            return $this->clientError('client/transfert', 'Le type d’opération transfert n’est pas configuré.');
-        }
-        $bareme = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, date('Y-m-d H:i:s'));
-        if ($bareme === null) {
-            return $this->clientError('client/transfert', 'Aucun barème de frais ne correspond à ce montant.');
+        $recipientsInput      = (string) ($this->request->getPost('recipients') ?? $this->request->getPost('recipient') ?? '');
+        $montantBrut          = $this->request->getPost('amount');
+        $inclureFraisRetrait  = $this->request->getPost('inclure_frais_retrait') ? true : false;
+        $destinataires        = $this->extraireDestinataires($recipientsInput);
+        $destinatairesUnique  = array_values(array_unique($destinataires));
+
+        if ($destinataires === []) {
+            return $this->transfertAvecErreur('Veuillez saisir au moins un numero destinataire.');
         }
 
-        $frais = (float) $bareme['montant_frais'];
-        if ($this->operationService->calculerSolde($numero) < ($montant + $frais)) {
-            return $this->clientError('client/transfert', 'Solde insuffisant pour effectuer ce transfert.');
+        if (count($destinatairesUnique) !== count($destinataires)) {
+            return $this->transfertAvecErreur('Chaque numero destinataire doit etre unique.');
         }
 
-        $this->operationService->enregistrer($numero, $typeId, $montant, $frais, $numeroDest);
-        session()->setFlashdata('succes', 'Transfert de ' . number_format($montant, 0, ',', ' ') . ' Ar vers ' . $numeroDest . ' effectué avec succès.');
-        return redirect()->to(site_url('client/accueil'));
+        if (! is_numeric($montantBrut) || (float) $montantBrut <= 0) {
+            return $this->transfertAvecErreur('Montant invalide.');
+        }
+
+        $montant = (int) round((float) $montantBrut);
+        $nombreDestinataires = count($destinataires);
+
+        if ($nombreDestinataires > 1 && ($montant % $nombreDestinataires) !== 0) {
+            return $this->transfertAvecErreur('Le montant doit etre divisible par le nombre de destinataires.');
+        }
+
+        $montantParDestinataire = (float) ($montant / $nombreDestinataires);
+        $typeIdTransfert        = $this->getTypeOperationIdParLibelle('transfert');
+        $maintenant             = (new DateTime())->format('Y-m-d H:i:s');
+        $baremeTransfert        = $this->baremeFraisService->getBaremeFraisMontant($typeIdTransfert, $montantParDestinataire, $maintenant);
+
+        if ($baremeTransfert === null) {
+            return $this->transfertAvecErreur('Aucun bareme de frais ne correspond a ce montant.');
+        }
+
+        $fraisTransfert = (float) $baremeTransfert['montant_frais'];
+        $fraisRetrait   = 0.0;
+        $memeOperateur  = true;
+        $destinataireExterne = false;
+
+        foreach ($destinataires as $destinataire) {
+            if ($destinataire === $numero) {
+                return $this->transfertAvecErreur('Impossible de transferer vers son propre numero.');
+            }
+
+            if (! ctype_digit($destinataire) || strlen($destinataire) !== 10) {
+                return $this->transfertAvecErreur('Chaque numero destinataire doit contenir 10 chiffres.');
+            }
+
+            $prefixeDestinataireValide = $this->prefixeEstValide(substr($destinataire, 0, 3));
+
+            if (! $prefixeDestinataireValide) {
+                $destinataireExterne = true;
+                continue;
+            }
+
+            if (! $this->clientService->existeParNumero($destinataire)) {
+                return $this->transfertAvecErreur('Numero destinataire introuvable : ' . $destinataire . '.');
+            }
+
+            $memeOperateur = $memeOperateur && $this->memeOperateur($numero, $destinataire);
+        }
+
+        if ($destinataireExterne && $nombreDestinataires > 1) {
+            return $this->transfertAvecErreur('Un envoi vers un operateur externe doit se faire vers un seul numero.');
+        }
+
+        if ($destinataireExterne && $inclureFraisRetrait) {
+            return $this->transfertAvecErreur('L option frais de retrait n est pas disponible pour un operateur externe.');
+        }
+
+        if ($nombreDestinataires > 1 && ! $memeOperateur) {
+            return $this->transfertAvecErreur('L envoi multiple est reserve aux numeros du meme operateur.');
+        }
+
+        if ($inclureFraisRetrait && ! $memeOperateur) {
+            return $this->transfertAvecErreur('Les frais de retrait ne peuvent etre inclus que pour un envoi vers le meme operateur.');
+        }
+
+        if ($inclureFraisRetrait) {
+            $typeIdRetrait = $this->getTypeOperationIdParLibelle('retrait');
+            $baremeRetrait = $this->baremeFraisService->getBaremeFraisMontant($typeIdRetrait, $montantParDestinataire, $maintenant);
+
+            if ($baremeRetrait === null) {
+                return $this->transfertAvecErreur('Aucun bareme de frais de retrait ne correspond a ce montant.');
+            }
+
+            $fraisRetrait = (float) $baremeRetrait['montant_frais'];
+        }
+
+        $soldeTotal = $nombreDestinataires * ($montantParDestinataire + $fraisTransfert + $fraisRetrait);
+        $solde = $this->operationService->calculerSolde($numero);
+
+        if ($solde < $soldeTotal) {
+            return $this->transfertAvecErreur('Solde insuffisant pour effectuer ce transfert.');
+        }
+
+        $referenceTransfert = 'TR-' . date('YmdHis') . '-' . bin2hex(random_bytes(3));
+
+        foreach ($destinataires as $destinataire) {
+            $this->operationService->enregistrer(
+                $numero,
+                $typeIdTransfert,
+                $montantParDestinataire,
+                $fraisTransfert,
+                $destinataire,
+                $fraisRetrait,
+                $referenceTransfert,
+                $nombreDestinataires
+            );
+        }
+
+        session()->setFlashdata(
+            'succes',
+            'Transfert de ' . number_format($montant, 0, ',', ' ') . ' Ar vers ' . $nombreDestinataires . ' destinataire(s) effectue avec succes.'
+        );
+
+        return redirect()->to('/client/accueil');
     }
 
     public function historique()
     {
-        if ($redirect = $this->verifierSession()) {
-            return $redirect;
+        $numero = $this->verifierSession();
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
         }
-        $numero = (string) session()->get('client_numero');
+
         $typeIdGet = $this->request->getGet('type') ?: null;
 
         return view('client/historique', [
@@ -241,90 +468,5 @@ class ClientController extends BaseController
         session()->remove(['client_numero', 'client_logged_in']);
         session()->regenerate();
         return redirect()->to(site_url('client/login'))->with('success', 'Vous êtes déconnecté.');
-    }
-
-    private function traiterConnexion()
-    {
-        $prefixe = trim((string) $this->request->getPost('prefixe'));
-        $suite = preg_replace('/\D+/', '', (string) $this->request->getPost('suite')) ?? '';
-        $numero = $this->normalizePhone((string) $this->request->getPost('numero'));
-
-        if ($prefixe !== '' || $suite !== '') {
-            if (! $this->prefixeEstValide($prefixe)) {
-                return $this->loginError('Préfixe non valable.', $prefixe, $suite, $numero);
-            }
-            if (! preg_match('/^\d{7}$/', $suite)) {
-                return $this->loginError('Le reste du numéro doit contenir 7 chiffres.', $prefixe, $suite, $numero);
-            }
-            $numero = $prefixe . $suite;
-        }
-
-        if (! preg_match('/^0\d{9}$/', $numero)) {
-            return $this->loginError('Le numéro doit contenir 10 chiffres.', $prefixe, $suite, $numero);
-        }
-        if (! $this->prefixeEstValide(substr($numero, 0, 3))) {
-            return $this->loginError('Le préfixe de ce numéro n’est pas configuré.', substr($numero, 0, 3), substr($numero, 3), $numero);
-        }
-
-        $nouveau = ! $this->clientService->existeParNumero($numero);
-        if ($nouveau && $this->clientService->creerCompte($numero) === false) {
-            return $this->loginError('Impossible de créer le compte client.', substr($numero, 0, 3), substr($numero, 3), $numero);
-        }
-
-        session()->regenerate();
-        session()->set(['client_numero' => $numero, 'client_logged_in' => true]);
-        return redirect()->to(site_url($nouveau ? 'client/info' : 'client/accueil'));
-    }
-
-    private function verifierSession(): ?RedirectResponse
-    {
-        if (session()->get('client_numero')) {
-            return null;
-        }
-        return redirect()->to(site_url('client/login'))->with('erreur', 'Connectez-vous avec votre numéro.');
-    }
-
-    private function getTypeOperationIdParLibelle(string $libelle): ?int
-    {
-        foreach ($this->typeOperationService->getAllTypeOperation() as $type) {
-            if (strtolower((string) $type['libelle']) === strtolower($libelle)) {
-                return (int) $type['id'];
-            }
-        }
-        return null;
-    }
-
-    private function prefixeEstValide(string $prefixe): bool
-    {
-        return $this->prefixeValableService->getPrefixeValableByPrefixe($prefixe) !== null;
-    }
-
-    private function normalizePhone(string $value): string
-    {
-        $numero = preg_replace('/\D+/', '', $value) ?? '';
-        if (str_starts_with($numero, '261')) {
-            $numero = '0' . substr($numero, 3);
-        }
-        return $numero;
-    }
-
-    private function normalizeAmount($value): float
-    {
-        return (float) str_replace([' ', ','], ['', '.'], trim((string) $value));
-    }
-
-    private function clientError(string $route, string $message): RedirectResponse
-    {
-        session()->setFlashdata('erreur', $message);
-        return redirect()->to(site_url($route))->withInput();
-    }
-
-    private function loginError(string $message, string $prefixe, string $suite, string $numero): RedirectResponse
-    {
-        session()->setFlashdata('erreur', $message);
-        session()->setFlashdata('prefixe_saisi', $prefixe);
-        session()->setFlashdata('suite_saisie', $suite);
-        session()->setFlashdata('numero_saisi', $numero);
-        return redirect()->to(site_url('client/login'))->withInput();
     }
 }

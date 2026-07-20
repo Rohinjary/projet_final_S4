@@ -25,11 +25,14 @@
 
 <div class="page-heading">
 <h1><i class="bi bi-arrow-left-right me-1"></i>Faire un transfert</h1>
-<p>Transferez de l'argent vers un autre numero MobiPay.</p>
+<p>Transferez de l'argent vers un ou plusieurs numeros MobiPay du meme operateur.</p>
 </div>
 
 <?php if (session()->getFlashdata('erreur')) : ?>
 <div class="alert alert-danger"><?= esc(session()->getFlashdata('erreur')) ?></div>
+<?php endif; ?>
+<?php if (session()->getFlashdata('succes')) : ?>
+<div class="alert alert-success"><?= esc(session()->getFlashdata('succes')) ?></div>
 <?php endif; ?>
 
 <div class="mp-card mp-card-body mb-3">
@@ -40,15 +43,20 @@
 <form action="<?= base_url('client/traiter-transfert') ?>
 <?= csrf_field() ?>" method="post">
 <div class="mb-3">
-<label class="form-label" for="recipient">Numero destinataire</label>
-<div class="input-group">
-<span class="input-group-text">+261</span>
-<input class="form-control" id="recipient" name="recipient" type="tel" inputmode="numeric" maxlength="10" placeholder="033 12 345 67" required>
-</div>
+<label class="form-label" for="recipients">Numero(s) destinataire(s)</label>
+<textarea class="form-control" id="recipients" name="recipients" rows="4" placeholder="0331234567, puis un autre numero par ligne ou avec des virgules" required><?= esc(old('recipients') ?? old('recipient') ?? '') ?></textarea>
+<div class="form-text">Saisissez un ou plusieurs numeros du meme operateur. Un numero par ligne, espace, virgule ou point-virgule.</div>
 </div>
 <div class="mb-3">
 <label class="form-label" for="amount">Montant a envoyer (Ar)</label>
-<input class="form-control" id="amount" name="amount" type="number" min="100" max="2000000" step="100" placeholder="Ex. 10 000" required>
+<input class="form-control" id="amount" name="amount" type="number" min="100" max="2000000" step="100" placeholder="Ex. 10 000" value="<?= esc(old('amount')) ?>" required>
+</div>
+<div class="form-check mb-3">
+<input class="form-check-input" type="checkbox" value="1" id="inclure_frais_retrait" name="inclure_frais_retrait" <?= old('inclure_frais_retrait') ? 'checked' : '' ?>>
+<label class="form-check-label" for="inclure_frais_retrait">
+Inclure les frais de retrait dans l envoi
+</label>
+<div class="form-text">Option disponible uniquement pour les numeros du meme operateur.</div>
 </div>
 <button class="btn btn-primary w-100 fw-bold py-2" type="submit"><i class="bi bi-send me-1"></i>Envoyer le transfert</button>
 </form>

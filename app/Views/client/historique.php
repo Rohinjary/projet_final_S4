@@ -42,8 +42,14 @@
 <?php foreach ($historique as $op) : ?>
 <?php
 $estDepot = $op['type_libelle'] === 'depot';
-$estRecu  = $op['type_libelle'] === 'transfert' && $op['destinataire_numero'] === $numero;
-$estSortie = !$estDepot && !$estRecu;
+$estEntree = ! empty($op['est_entree']);
+$estSortie = ! empty($op['est_sortie']);
+$montantAffiche = (float) $op['montant'];
+if ($op['type_libelle'] === 'transfert' && $estEntree) {
+	$montantAffiche += (float) ($op['frais_retrait'] ?? 0);
+}
+$nbDestinataires = (int) ($op['nb_destinataires'] ?? 1);
+$destinatairesAffiches = trim((string) ($op['destinataires_affiches'] ?? ''));
 $dateOperation = $op['date_operation'];
 if ($dateOperation) {
 	$timestamp = strtotime($dateOperation);
@@ -54,20 +60,39 @@ if ($dateOperation) {
 ?>
 <div class="mp-card mp-card-body d-flex justify-content-between align-items-center">
 <div>
-<div class="fw-bold"><?= esc(ucfirst($op['type_libelle'])) ?><?= $estRecu ? ' (recu)' : '' ?></div>
-<div class="small text-mp-muted"><?= esc($dateOperation) ?></div>
-<?php if ($op['destinataire_numero']) : ?>
-<div class="small text-mp-muted">
-<?= $estRecu ? 'De ' . esc($op['client_numero']) : 'Vers ' . esc($op['destinataire_numero']) ?>
+<div class="fw-bold">
+<?= esc(ucfirst($op['type_libelle'])) ?>
+<?php if ($op['type_libelle'] === 'transfert' && $nbDestinataires > 1 && $estSortie) : ?>
+(<?= $nbDestinataires ?> destinataires)
+<?php elseif ($op['type_libelle'] === 'transfert' && $estEntree) : ?>
+(recu)
+<?php endif; ?>
 </div>
+<div class="small text-mp-muted"><?= esc($dateOperation) ?></div>
+<?php if ($op['type_libelle'] === 'transfert') : ?>
+<div class="small text-mp-muted">
+<?php if ($estEntree) : ?>
+De <?= esc($op['client_numero']) ?>
+<?php elseif ($nbDestinataires > 1) : ?>
+Vers <?= $nbDestinataires ?> destinataires
+<?php else : ?>
+Vers <?= esc($op['destinataire_numero']) ?>
+<?php endif; ?>
+</div>
+<?php if ($destinatairesAffiches !== '' && $nbDestinataires > 1 && $estSortie) : ?>
+<div class="small text-mp-muted"><?= esc($destinatairesAffiches) ?></div>
+<?php endif; ?>
 <?php endif; ?>
 </div>
 <div class="text-end">
-<div class="fw-bold <?= $estDepot || $estRecu ? 'text-success' : '' ?>">
-<?= $estDepot || $estRecu ? '+' : '-' ?><?= number_format($op['montant'], 0, ',', ' ') ?> Ar
+<div class="fw-bold <?= $estDepot || $estEntree ? 'text-success' : '' ?>">
+<?= $estDepot || $estEntree ? '+' : '-' ?><?= number_format($montantAffiche, 0, ',', ' ') ?> Ar
 </div>
 <?php if ((float) $op['frais'] > 0 && $estSortie) : ?>
-<div class="small text-mp-muted">frais : <?= number_format($op['frais'], 0, ',', ' ') ?> Ar</div>
+<div class="small text-mp-muted">frais transfert : <?= number_format($op['frais'], 0, ',', ' ') ?> Ar</div>
+<?php endif; ?>
+<?php if ((float) ($op['frais_retrait'] ?? 0) > 0 && $estSortie) : ?>
+<div class="small text-mp-muted">frais retrait : <?= number_format($op['frais_retrait'], 0, ',', ' ') ?> Ar</div>
 <?php endif; ?>
 </div>
 </div>
