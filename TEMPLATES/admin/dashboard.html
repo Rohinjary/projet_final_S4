@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Prototype HTML Bootstrap d'un opérateur Mobile Money">
+  <title>Tableau de bord | MobiPay</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="../assets/css/style.css" rel="stylesheet">
+</head>
+<body data-page="admin-dashboard" class="">
+
+<div class="admin-layout">
+  
+<aside class="admin-sidebar">
+  <div class="admin-logo"><strong><i class="bi bi-phone me-1"></i>MobiPay</strong><small>Espace Opérateur</small></div>
+  <nav class="admin-nav">
+    <div class="admin-nav-label">Tableau de bord</div>
+    <a href="dashboard.html" class="active"><i class="bi bi-grid-1x2"></i>Dashboard</a>
+    <div class="admin-nav-label">Configuration</div>
+    <a href="prefixes.html" class=""><i class="bi bi-hash"></i>Préfixes</a>
+    <a href="baremes.html" class=""><i class="bi bi-table"></i>Types & barèmes</a>
+    <div class="admin-nav-label">Rapports</div>
+    <a href="gains.html" class=""><i class="bi bi-graph-up-arrow"></i>Situation gains</a>
+    <a href="comptes.html" class=""><i class="bi bi-people"></i>Comptes clients</a>
+  </nav>
+  <div class="admin-sidebar-footer"><a href="../index.html"><i class="bi bi-arrow-left me-2"></i>Interface client</a></div>
+</aside>
+  <div class="sidebar-backdrop" data-sidebar-toggle></div>
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-sm btn-outline-secondary sidebar-toggle" type="button" data-sidebar-toggle aria-label="Ouvrir le menu"><i class="bi bi-list"></i></button>
+        <div class="admin-page-title">Tableau de bord</div>
+      </div>
+      <div class="admin-user"><span>Administrateur</span><div class="admin-avatar">AD</div></div>
+    </header>
+    <main class="admin-content">
+<div class="row g-3 mb-4">
+  <div class="col-sm-6 col-xl-3"><section class="mp-card mp-card-body h-100"><div class="d-flex justify-content-between"><div><div class="stat-label">Total clients</div><div id="stat-clients" class="stat-value">0</div><div class="stat-sub">Comptes créés automatiquement</div></div><div class="stat-icon"><i class="bi bi-people"></i></div></div></section></div>
+  <div class="col-sm-6 col-xl-3"><section class="mp-card mp-card-body h-100 stat-success"><div class="d-flex justify-content-between"><div><div class="stat-label">Dépôts du jour</div><div id="stat-deposits" class="stat-value">0 Ar</div><div id="stat-deposits-sub" class="stat-sub">0 transaction</div></div><div class="stat-icon"><i class="bi bi-arrow-down-circle"></i></div></div></section></div>
+  <div class="col-sm-6 col-xl-3"><section class="mp-card mp-card-body h-100 stat-danger"><div class="d-flex justify-content-between"><div><div class="stat-label">Retraits du jour</div><div id="stat-withdrawals" class="stat-value">0 Ar</div><div id="stat-withdrawals-sub" class="stat-sub">0 transaction</div></div><div class="stat-icon"><i class="bi bi-arrow-up-circle"></i></div></div></section></div>
+  <div class="col-sm-6 col-xl-3"><section class="mp-card mp-card-body h-100 stat-warning"><div class="d-flex justify-content-between"><div><div class="stat-label">Gains du jour</div><div id="stat-gains" class="stat-value">0 Ar</div><div class="stat-sub">Frais retrait + transfert</div></div><div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div></div></section></div>
+</div>
+<section class="mp-card">
+  <div class="mp-card-body d-flex align-items-center justify-content-between gap-3"><div><div class="mp-section-title">Dernières opérations</div><div class="mp-section-subtitle">Vue synthétique de l'activité récente</div></div><span class="badge-soft-secondary">Aujourd'hui</span></div>
+  <div class="table-responsive"><table class="table table-mp align-middle"><thead><tr><th>Référence</th><th>Type</th><th>Client</th><th class="text-end">Montant (Ar)</th><th class="text-end">Frais (Ar)</th><th>Heure</th></tr></thead><tbody id="admin-recent-operations"></tbody></table></div>
+</section>
+</main>
+  </div>
+</div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/app.js"></script>
+</body>
+</html>
