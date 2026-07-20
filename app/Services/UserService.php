@@ -19,10 +19,10 @@ class UserService
     {
         $user = $this->userModel->first();
 
-        if ($user === null) {
+        if ($user === null || ! isset($user['password'])) {
             return false;
         }
 
-        return password_verify($password, $user->password);
+        return password_verify($password, $user['password']);
     }
 }
