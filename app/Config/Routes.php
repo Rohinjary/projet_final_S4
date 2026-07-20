@@ -4,21 +4,28 @@ use CodeIgniter\Router\RouteCollection;
  * @var RouteCollection $routes
  */
 
-// Auth
-$routes->get('/', 'AuthController::login');
-$routes->get('login', 'AuthController::login');
-$routes->post('login', 'AuthController::loginPost');
-$routes->get('logout', 'AuthController::logout');
+// CLIENT
+$routes->get('client/login', 'ClientController::login');
+$routes->post('client/authentifier', 'ClientController::authentifier');
 
-// Caisse
-$routes->group('caisse', ['filter' => 'auth'], function($routes) {
-    $routes->get('choix',   'CaisseController::choix');
-    $routes->post('valider', 'CaisseController::valider');
-});
+$routes->get('client/choix-prefixe', 'ClientController::choixPrefixe');
+$routes->post('client/valider-nouveau-numero', 'ClientController::validerNouveauNumero');
 
-// Achat
-$routes->group('achat', ['filter' => 'auth'], function($routes) {
-    $routes->get('saisie',        'AchatController::saisie');
-    $routes->post('ajouterLigne', 'AchatController::ajouterLigne');
-    $routes->post('cloturer',     'AchatController::cloturer');
-});
+$routes->get('client/info', 'ClientController::info');
+$routes->post('client/enregistrer-info', 'ClientController::enregistrerInfo');
+$routes->get('client/passer-info', 'ClientController::passerInfo');
+
+$routes->get('client/accueil', 'ClientController::accueil');
+
+$routes->get('client/depot', 'ClientController::depot');
+$routes->post('client/traiter-depot', 'ClientController::traiterDepot');
+
+$routes->get('client/retrait', 'ClientController::retrait');
+$routes->post('client/traiter-retrait', 'ClientController::traiterRetrait');
+
+$routes->get('client/transfert', 'ClientController::transfert');
+$routes->post('client/traiter-transfert', 'ClientController::traiterTransfert');
+
+$routes->get('client/historique', 'ClientController::historique');
+
+$routes->get('client/deconnexion', 'ClientController::deconnexion');
