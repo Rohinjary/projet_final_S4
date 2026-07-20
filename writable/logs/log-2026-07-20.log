@@ -1,0 +1,48 @@
+CRITICAL - 2026-07-20 09:15:56 --> ErrorException: Attempt to read property "password" on array
+[Method: POST, Route: admin/login]
+in APPPATH/Services/UserService.php on line 26.
+ 1 APPPATH/Services/UserService.php(26): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Attempt to read property "password" on array', '/home/noraa/Fianarana/L2 ITU/SI/EXAM/projet_final_S4/app/Services/UserService.php', 26)
+ 2 APPPATH/Controllers/Admin/AuthController.php(43): App\Services\UserService->verifyUser('operateur123')
+ 3 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\Admin\AuthController->operatorLogin()
+ 4 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Admin\AuthController))
+ 5 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ 9 SYSTEMPATH/rewrite.php(44): require_once('/home/noraa/Fianarana/L2 ITU/SI/EXAM/projet_final_S4/public/index.php')
+CRITICAL - 2026-07-20 09:16:13 --> ErrorException: Attempt to read property "password" on array
+[Method: POST, Route: admin/login]
+in APPPATH/Services/UserService.php on line 26.
+ 1 APPPATH/Services/UserService.php(26): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Attempt to read property "password" on array', '/home/noraa/Fianarana/L2 ITU/SI/EXAM/projet_final_S4/app/Services/UserService.php', 26)
+ 2 APPPATH/Controllers/Admin/AuthController.php(43): App\Services\UserService->verifyUser('operateur123')
+ 3 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\Admin\AuthController->operatorLogin()
+ 4 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Admin\AuthController))
+ 5 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ 9 SYSTEMPATH/rewrite.php(44): require_once('/home/noraa/Fianarana/L2 ITU/SI/EXAM/projet_final_S4/public/index.php')
+CRITICAL - 2026-07-20 09:21:17 --> ErrorException: Attempt to read property "password" on array
+[Method: POST, Route: admin/login]
+in APPPATH/Services/UserService.php on line 26.
+ 1 APPPATH/Services/UserService.php(26): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Attempt to read property "password" on array', '/home/noraa/Fianarana/L2 ITU/SI/EXAM/projet_final_S4/app/Services/UserService.php', 26)
+ 2 APPPATH/Controllers/Admin/AuthController.php(43): App\Services\UserService->verifyUser('operateur123')
+ 3 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\Admin\AuthController->operatorLogin()
+ 4 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Admin\AuthController))
+ 5 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ 9 SYSTEMPATH/rewrite.php(44): require_once('/home/noraa/Fianarana/L2 ITU/SI/EXAM/projet_final_S4/public/index.php')
+CRITICAL - 2026-07-20 09:26:34 --> ErrorException: Attempt to read property "password" on array
+[Method: POST, Route: admin/login]
+in APPPATH/Services/UserService.php on line 26.
+ 1 APPPATH/Services/UserService.php(26): CodeIgniter\Debug\Exceptions->errorHandler(2, 'Attempt to read property "password" on array', '/home/noraa/Fianarana/L2 ITU/SI/EXAM/projet_final_S4/app/Services/UserService.php', 26)
+ 2 APPPATH/Controllers/Admin/AuthController.php(43): App\Services\UserService->verifyUser('operateur123')
+ 3 SYSTEMPATH/CodeIgniter.php(951): App\Controllers\Admin\AuthController->operatorLogin()
+ 4 SYSTEMPATH/CodeIgniter.php(497): CodeIgniter\CodeIgniter->runController(Object(App\Controllers\Admin\AuthController))
+ 5 SYSTEMPATH/CodeIgniter.php(340): CodeIgniter\CodeIgniter->handleRequest(null, Object(Config\Cache), false)
+ 6 SYSTEMPATH/Boot.php(417): CodeIgniter\CodeIgniter->run()
+ 7 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
+ 8 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
+ 9 SYSTEMPATH/rewrite.php(44): require_once('/home/noraa/Fianarana/L2 ITU/SI/EXAM/projet_final_S4/public/index.php')

@@ -1,24 +1,15 @@
 <?php
+
 use CodeIgniter\Router\RouteCollection;
-/**
- * @var RouteCollection $routes
- */
 
-// Auth
-$routes->get('/', 'AuthController::login');
-$routes->get('login', 'AuthController::login');
-$routes->post('login', 'AuthController::loginPost');
-$routes->get('logout', 'AuthController::logout');
+/** @var RouteCollection $routes */
 
-// Caisse
-$routes->group('caisse', ['filter' => 'auth'], function($routes) {
-    $routes->get('choix',   'CaisseController::choix');
-    $routes->post('valider', 'CaisseController::valider');
-});
+$routes->get('/', 'Admin\AuthController::index');
 
-// Achat
-$routes->group('achat', ['filter' => 'auth'], function($routes) {
-    $routes->get('saisie',        'AchatController::saisie');
-    $routes->post('ajouterLigne', 'AchatController::ajouterLigne');
-    $routes->post('cloturer',     'AchatController::cloturer');
-});
+$routes->post('client/login', 'Admin\AuthController::clientLogin');
+$routes->get('client/dashboard', 'Admin\AuthController::clientDashboard');
+
+$routes->post('admin/login', 'Admin\AuthController::operatorLogin');
+$routes->get('admin/dashboard', 'Admin\AuthController::adminDashboard');
+
+$routes->get('logout', 'Admin\AuthController::logout');
