@@ -11,8 +11,8 @@ create table type_operation(
 
 create table client(
     numero varchar(10) primary key,
-    nom varchar(50) not null,
-    prenom varchar(50) not null,
+    nom varchar(50) null,
+    prenom varchar(50) null,
     date_ajout timestamp default current_timestamp
 );
 
@@ -39,3 +39,10 @@ create table operation(
     foreign key (type_operation_id) references type_operation(id),
     foreign key (destinataire_numero) references client(numero),
 )
+
+create table user(
+    id int primary key auto_increment,
+    password varchar(255) not null,
+    date_ajout timestamp default current_timestamp
+);
+
