@@ -43,7 +43,7 @@ class PrefixeController extends BaseController
         $prefixe = trim((string) $this->request->getPost('prefixe'));
         $operateurId = (int) $this->request->getPost('operateur_id');
 
-        if ($error = $this->validateData($prefixe, $operateurId)) {
+        if ($error = $this->validatePrefixeData($prefixe, $operateurId)) {
             return redirect()->back()->withInput()->with('error', $error);
         }
         if ($this->prefixeService->prefixeExiste($prefixe)) {
@@ -71,7 +71,7 @@ class PrefixeController extends BaseController
 
         $prefixe = trim((string) $this->request->getPost('prefixe'));
         $operateurId = (int) $this->request->getPost('operateur_id');
-        if ($error = $this->validateData($prefixe, $operateurId)) {
+        if ($error = $this->validatePrefixeData($prefixe, $operateurId)) {
             return redirect()->to(site_url('admin/prefixes'))->with('error', $error);
         }
         if ($this->prefixeService->prefixeExiste($prefixe, $id)) {
@@ -116,7 +116,7 @@ class PrefixeController extends BaseController
             ->with('success', 'Le préfixe ' . $prefixe['prefixe'] . ' a été supprimé.');
     }
 
-    private function validateData(string $prefixe, int $operateurId): ?string
+    private function validatePrefixeData(string $prefixe, int $operateurId): ?string
     {
         if (! preg_match('/^0\d{2}$/', $prefixe)) {
             return 'Le préfixe doit contenir exactement 3 chiffres et commencer par 0.';
