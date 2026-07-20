@@ -198,3 +198,31 @@ in APPPATH/Controllers/Client/ClientController.php on line 294.
  6 SYSTEMPATH/Boot.php(68): CodeIgniter\Boot::runCodeIgniter(Object(CodeIgniter\CodeIgniter))
  7 FCPATH/index.php(59): CodeIgniter\Boot::bootWeb(Object(Config\Paths))
  8 SYSTEMPATH/rewrite.php(44): require_once('/home/njary/Documents/S4/SI(Mr Rojo)/projet_final_S4/public/index.php')
+ERROR - 2026-07-20 13:25:20 --> duplicate column name: frais_retrait
+in SYSTEMPATH/Database/SQLite3/Connection.php on line 163.
+ 1 SYSTEMPATH/Database/SQLite3/Connection.php(163): SQLite3->exec('ALTER TABLE `operation` ADD `frais_retrait` NUMERIC NOT NULL DEFAULT 0')
+ 2 SYSTEMPATH/Database/BaseConnection.php(910): CodeIgniter\Database\SQLite3\Connection->execute('ALTER TABLE `operation` ADD `frais_retrait` NUMERIC NOT NULL DEFAULT 0')
+ 3 SYSTEMPATH/Database/BaseConnection.php(827): CodeIgniter\Database\BaseConnection->simpleQuery('ALTER TABLE `operation` ADD `frais_retrait` NUMERIC NOT NULL DEFAULT 0')
+ 4 SYSTEMPATH/Database/Forge.php(772): CodeIgniter\Database\BaseConnection->query('ALTER TABLE `operation` ADD `frais_retrait` NUMERIC NOT NULL DEFAULT 0')
+ 5 APPPATH/Database/Migrations/2026-07-20-000011_AlterOperationV2.php(11): CodeIgniter\Database\Forge->addColumn('operation', [...])
+ 6 SYSTEMPATH/Database/MigrationRunner.php(1014): App\Database\Migrations\AlterOperationV2->up()
+ 7 SYSTEMPATH/Database/MigrationRunner.php(202): CodeIgniter\Database\MigrationRunner->migrate('up', Object(stdClass))
+ 8 SYSTEMPATH/Commands/Database/Migrate.php(89): CodeIgniter\Database\MigrationRunner->latest(null)
+ 9 SYSTEMPATH/CLI/SignalTrait.php(245): CodeIgniter\Commands\Database\Migrate::CodeIgniter\Commands\Database\{closure}()
+10 SYSTEMPATH/Commands/Database/Migrate.php(88): CodeIgniter\Commands\Database\Migrate->withSignalsBlocked(Object(Closure))
+11 SYSTEMPATH/CLI/Commands.php(74): CodeIgniter\Commands\Database\Migrate->run([])
+12 SYSTEMPATH/CLI/Console.php(47): CodeIgniter\CLI\Commands->run('migrate', [])
+13 SYSTEMPATH/Boot.php(442): CodeIgniter\CLI\Console->run()
+14 SYSTEMPATH/Boot.php(166): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+15 ROOTPATH/spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
+CRITICAL - 2026-07-20 13:25:20 --> ErrorException: require(/home/njary/Documents/S4/SI(Mr Rojo)/projet_final_S4/app/Views/errors/cli/error_exception.php): Failed to open stream: No such file or directory
+[Method: CLI, Route: migrate]
+in SYSTEMPATH/CLI/BaseCommand.php on line 133.
+ 1 SYSTEMPATH/CLI/BaseCommand.php(133): CodeIgniter\Debug\Exceptions->errorHandler(2, 'require(/home/njary/Documents/S4/SI(Mr Rojo)/projet_final_S4/app/Views/errors/cli/error_exception.php): Failed to open stream: No such file or directory', '/home/njary/Documents/S4/SI(Mr Rojo)/projet_final_S4/system/CLI/BaseCommand.php', 133)
+ 2 SYSTEMPATH/CLI/BaseCommand.php(133): require()
+ 3 SYSTEMPATH/Commands/Database/Migrate.php(104): CodeIgniter\CLI\BaseCommand->showError(Object(CodeIgniter\Database\Exceptions\DatabaseException))
+ 4 SYSTEMPATH/CLI/Commands.php(74): CodeIgniter\Commands\Database\Migrate->run([])
+ 5 SYSTEMPATH/CLI/Console.php(47): CodeIgniter\CLI\Commands->run('migrate', [])
+ 6 SYSTEMPATH/Boot.php(442): CodeIgniter\CLI\Console->run()
+ 7 SYSTEMPATH/Boot.php(166): CodeIgniter\Boot::runCommand(Object(CodeIgniter\CLI\Console))
+ 8 ROOTPATH/spark(87): CodeIgniter\Boot::bootSpark(Object(Config\Paths))
