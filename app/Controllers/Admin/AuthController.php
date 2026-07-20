@@ -4,6 +4,10 @@ namespace App\Controllers\Admin;
 
 use App\Controllers\BaseController;
 use App\Services\UserService;
+use App\Services\PrefixeValableService;
+use App\Services\TypeOperationService;
+use App\Services\BaremeFraisService;
+use App\Services\RapportService;
 
 class AuthController extends BaseController
 {
@@ -88,8 +92,24 @@ class AuthController extends BaseController
                 ->with('error', 'Connectez-vous à l’espace opérateur.');
         }
 
+        $prefixeService = new PrefixeValableService();
+        $typeService = new TypeOperationService();
+        $baremeService = new BaremeFraisService();
+        $rapportService = new RapportService();
+
+        $prefixes = $prefixeService->getAllPrefixeValable();
+        $types = $typeService->getAllTypeOperation();
+        $latestBaremes = $baremeService->getLatestBaremesGroupedByType();
+        $clientSummary = $rapportService->getClientSummary();
+        $currentGains = $rapportService->getGains((int) date('Y'), (int) date('m'));
+
         return view('Admin/dashboard', [
-            'title' => 'Tableau de bord opérateur',
+            'title'         => 'Tableau de bord opérateur',
+            'prefixes'      => $prefixes,
+            'types'         => $types,
+            'latestBaremes' => $latestBaremes,
+            'clientSummary' => $clientSummary,
+            'currentGains'  => $currentGains,
         ]);
     }
 

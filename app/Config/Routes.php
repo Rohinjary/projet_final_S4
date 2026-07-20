@@ -21,6 +21,9 @@ $routes->post('admin/baremes', 'Admin\BaremeController::store');
 $routes->post('admin/baremes/(:num)', 'Admin\BaremeController::update/$1');
 $routes->post('admin/types', 'Admin\BaremeController::storeType');
 
+$routes->get('admin/gains', 'Admin\RapportController::gains');
+$routes->get('admin/comptes', 'Admin\RapportController::comptes');
+
 $routes->get('logout', 'Admin\AuthController::logout');
 // CLIENT
 $routes->get('client/login', 'ClientController::login');
