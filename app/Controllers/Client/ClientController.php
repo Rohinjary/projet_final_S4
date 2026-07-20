@@ -195,7 +195,7 @@ class ClientController extends BaseController
         $typeId     = $this->getTypeOperationIdParLibelle('depot');
         $maintenant = (new DateTime())->format('Y-m-d H:i:s');
         $bareme     = $this->baremeFraisService->getBaremeFraisMontant($typeId, $montant, $maintenant);
-        $frais      = $bareme ? (float) $bareme->montant_frais : 0;
+        $frais      = $bareme ? (float) $bareme['montant_frais'] : 0;
 
         $this->operationService->enregistrer($numero, $typeId, $montant, $frais);
 
@@ -234,7 +234,7 @@ class ClientController extends BaseController
             session()->setFlashdata('erreur', 'Aucun bareme de frais ne correspond a ce montant.');
             return redirect()->to('/client/retrait');
         }
-        $frais = (float) $bareme->montant_frais;
+        $frais = (float) $bareme['montant_frais'];
 
         $solde = $this->operationService->calculerSolde($numero);
 
@@ -291,7 +291,7 @@ class ClientController extends BaseController
             session()->setFlashdata('erreur', 'Aucun bareme de frais ne correspond a ce montant.');
             return redirect()->to('/client/transfert');
         }
-        $frais = (float) $bareme->montant_frais;
+        $frais = (float) $bareme['montant_frais'];
 
         $solde = $this->operationService->calculerSolde($numero);
 
