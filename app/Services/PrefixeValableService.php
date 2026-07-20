@@ -35,4 +35,14 @@ class PrefixeValableService
         return $this->prefixeValableModel->insert($data);
     }
 
+    public function getPrefixeValableByPrefixe($prefixe)
+    {
+        return $this->prefixeValableModel->where('prefixe', $prefixe)->first();
+    }
+
+    public function getPrefixeValableByOperateurId($operateurId)
+    {
+        return $this->prefixeValableModel->where('operateur_id', $operateurId)->findAll();
+    }
+
 }
