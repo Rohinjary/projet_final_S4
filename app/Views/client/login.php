@@ -53,6 +53,12 @@ $prefixes     = $prefixes ?? [];
 </button>
 </form>
 
+<div class="text-center border-top mt-4 pt-3">
+<a href="<?= site_url('admin/login') ?>" class="btn btn-link btn-sm text-decoration-none text-mp-muted">
+<i class="bi bi-shield-lock me-1"></i>Espace opérateur
+</a>
+</div>
+
 </section>
 </main>
 

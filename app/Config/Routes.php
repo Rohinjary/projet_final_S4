@@ -4,11 +4,14 @@ use CodeIgniter\Router\RouteCollection;
 
 /** @var RouteCollection $routes */
 
-$routes->get('/', 'Admin\AuthController::index');
+$routes->get('/', static function () {
+    return redirect()->to(site_url('client/login'));
+});
 
 $routes->post('client/login', 'Admin\AuthController::clientLogin');
 $routes->get('client/dashboard', 'Admin\AuthController::clientDashboard');
 
+$routes->get('admin/login', 'Admin\AuthController::operatorForm');
 $routes->post('admin/login', 'Admin\AuthController::operatorLogin');
 $routes->get('admin/dashboard', 'Admin\AuthController::adminDashboard');
 

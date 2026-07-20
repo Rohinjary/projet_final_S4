@@ -30,6 +30,18 @@ class AuthController extends BaseController
         ]);
     }
 
+
+    public function operatorForm()
+    {
+        if (session()->get('operator_logged_in') === true) {
+            return redirect()->to(site_url('admin/dashboard'));
+        }
+
+        return view('Admin/login', [
+            'title' => 'Connexion opérateur',
+        ]);
+    }
+
     public function operatorLogin()
     {
         $password = trim((string) $this->request->getPost('password'));
