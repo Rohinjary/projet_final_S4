@@ -19,8 +19,8 @@
       <a href="<?= site_url('admin/prefixes') ?>"><i class="bi bi-hash"></i>Préfixes</a>
       <a class="active" href="<?= site_url('admin/baremes') ?>"><i class="bi bi-table"></i>Types & barèmes</a>
       <div class="admin-nav-label">Rapports</div>
-      <a href="#"><i class="bi bi-graph-up-arrow"></i>Situation gains</a>
-      <a href="#"><i class="bi bi-people"></i>Comptes clients</a>
+      <a class="active" href="<?= site_url('admin/gains') ?>"><i class="bi bi-graph-up-arrow"></i>Situation gains</a>
+      <a href="<?= site_url('admin/comptes') ?>"><i class="bi bi-people"></i>Comptes clients</a>
     </nav>
     <div class="admin-sidebar-footer"><a href="<?= site_url('logout') ?>"><i class="bi bi-box-arrow-left me-2"></i>Déconnexion</a></div>
   </aside>
