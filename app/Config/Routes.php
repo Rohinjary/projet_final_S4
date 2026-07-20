@@ -16,6 +16,11 @@ $routes->get('admin/prefixes', 'Admin\PrefixeController::index');
 $routes->post('admin/prefixes', 'Admin\PrefixeController::store');
 $routes->post('admin/prefixes/(:num)/delete', 'Admin\PrefixeController::delete/$1');
 
+$routes->get('admin/baremes', 'Admin\BaremeController::index');
+$routes->post('admin/baremes', 'Admin\BaremeController::store');
+$routes->post('admin/baremes/(:num)', 'Admin\BaremeController::update/$1');
+$routes->post('admin/types', 'Admin\BaremeController::storeType');
+
 $routes->get('logout', 'Admin\AuthController::logout');
 // CLIENT
 $routes->get('client/login', 'ClientController::login');
