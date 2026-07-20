@@ -12,6 +12,10 @@ $routes->get('client/dashboard', 'Admin\AuthController::clientDashboard');
 $routes->post('admin/login', 'Admin\AuthController::operatorLogin');
 $routes->get('admin/dashboard', 'Admin\AuthController::adminDashboard');
 
+$routes->get('admin/prefixes', 'Admin\PrefixeController::index');
+$routes->post('admin/prefixes', 'Admin\PrefixeController::store');
+$routes->post('admin/prefixes/(:num)/delete', 'Admin\PrefixeController::delete/$1');
+
 $routes->get('logout', 'Admin\AuthController::logout');
 // CLIENT
 $routes->get('client/login', 'ClientController::login');
