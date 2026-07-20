@@ -357,6 +357,7 @@ class ClientController extends BaseController
         $fraisTransfert = (float) $baremeTransfert['montant_frais'];
         $fraisRetrait   = 0.0;
         $memeOperateur  = true;
+        $destinataireExterne = false;
 
         foreach ($destinataires as $destinataire) {
             if ($destinataire === $numero) {
@@ -367,11 +368,26 @@ class ClientController extends BaseController
                 return $this->transfertAvecErreur('Chaque numero destinataire doit contenir 10 chiffres.');
             }
 
+            $prefixeDestinataireValide = $this->prefixeEstValide(substr($destinataire, 0, 3));
+
+            if (! $prefixeDestinataireValide) {
+                $destinataireExterne = true;
+                continue;
+            }
+
             if (! $this->clientService->existeParNumero($destinataire)) {
                 return $this->transfertAvecErreur('Numero destinataire introuvable : ' . $destinataire . '.');
             }
 
             $memeOperateur = $memeOperateur && $this->memeOperateur($numero, $destinataire);
+        }
+
+        if ($destinataireExterne && $nombreDestinataires > 1) {
+            return $this->transfertAvecErreur('Un envoi vers un operateur externe doit se faire vers un seul numero.');
+        }
+
+        if ($destinataireExterne && $inclureFraisRetrait) {
+            return $this->transfertAvecErreur('L option frais de retrait n est pas disponible pour un operateur externe.');
         }
 
         if ($nombreDestinataires > 1 && ! $memeOperateur) {
