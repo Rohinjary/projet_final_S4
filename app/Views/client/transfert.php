@@ -40,8 +40,8 @@
 <div class="stat-value"><?= number_format($solde, 0, ',', ' ') ?> Ar</div>
 </div>
 
-<form action="<?= base_url('client/traiter-transfert') ?>
-<?= csrf_field() ?>" method="post">
+<form action="<?= base_url('client/traiter-transfert') ?>" method="post">
+<?= csrf_field() ?>
 <div class="mb-3">
 <label class="form-label" for="recipients">Numero(s) destinataire(s)</label>
 <textarea class="form-control" id="recipients" name="recipients" rows="4" placeholder="0331234567, puis un autre numero par ligne ou avec des virgules" required><?= esc(old('recipients') ?? old('recipient') ?? '') ?></textarea>
