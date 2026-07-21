@@ -10,6 +10,8 @@ use App\Services\OperationService;
 use App\Services\OperateurService;
 use App\Services\PrefixeValableService;
 use App\Services\TypeOperationService;
+use App\Services\EpargneClientService;
+use App\Models\MouvementEpargneModel;
 use DateTime;
 use CodeIgniter\HTTP\RedirectResponse;
 
@@ -22,6 +24,8 @@ class ClientController extends BaseController
     private BaremeFraisService $baremeFraisService;
     private CommissionOperateurService $commissionOperateurService;
     private OperateurService $operateurService;
+    private EpargneClientService $epargneClientService;
+    private MouvementEpargneModel $mouvement_epargne_model;
 
     public function __construct()
     {
@@ -32,6 +36,8 @@ class ClientController extends BaseController
         $this->baremeFraisService = new BaremeFraisService();
         $this->commissionOperateurService = new CommissionOperateurService();
         $this->operateurService = new OperateurService();
+        $this->epargneClientService = new EpargneClientService();
+        $this->mouvement_epargne_model = new MouvementEpargneModel();
     }
 
     private function verifierSession()
@@ -466,17 +472,42 @@ class ClientController extends BaseController
         $referenceTransfert = 'TR-' . date('YmdHis') . '-' . bin2hex(random_bytes(3));
 
         foreach ($destinataires as $destinataire) {
-            $this->operationService->enregistrer(
-                $numero,
-                $typeIdTransfert,
-                $montantParDestinataire,
-                $fraisTransfert,
-                $destinataire,
-                $fraisRetrait,
-                $referenceTransfert,
-                $nombreDestinataires,
-                (float) ($commissionsParDestinataire[$destinataire] ?? 0)
-            );
+            $epargneClient = $this->epargneClientService->getEpargneByNumero($destinataire);
+
+            if ($epargneClient != null) {
+                $pourcentageEpargne = $epargneClient['pourcentage'];
+                $pourcentageCompte = 100 - $pourcentageEpargne;
+                $this->operationService->enregistrer(
+                    $numero,
+                    $typeIdTransfert,
+                    $montantParDestinataire * ($pourcentageCompte / 100),
+                    $fraisTransfert,
+                    $destinataire,
+                    $fraisRetrait,
+                    $referenceTransfert,
+                    $nombreDestinataires,
+                    (float) ($commissionsParDestinataire[$destinataire] ?? 0)
+                );
+
+                $this->mouvement_epargne_model->insert([
+                    ['client_numero'] => $destinataire,
+                    ['montant_epargne'] => $montantParDestinataire * ($pourcentageEpargne / 100),
+                ]);
+
+                
+            } else {
+                $this->operationService->enregistrer(
+                    $numero,
+                    $typeIdTransfert,
+                    $montantParDestinataire,
+                    $fraisTransfert,
+                    $destinataire,
+                    $fraisRetrait,
+                    $referenceTransfert,
+                    $nombreDestinataires,
+                    (float) ($commissionsParDestinataire[$destinataire] ?? 0)
+                );
+            }
         }
 
         $messageSucces = 'Transfert de ' . number_format($montant, 0, ',', ' ')
@@ -517,4 +548,30 @@ class ClientController extends BaseController
         session()->regenerate();
         return redirect()->to(site_url('client/login'))->with('success', 'Vous êtes déconnecté.');
     }
+
+    public function formEpargne()
+    {
+        $numero = $this->verifierSession();
+
+        if ($numero instanceof \CodeIgniter\HTTP\RedirectResponse) {
+            return $numero;
+        }
+
+        $solde = $this->operationService->calculerSolde($numero);
+        return view('client/formEpargne', ['solde' => $solde]);
+    }
+
+    public function traiterEpargne(){
+        $numero = $this->verifierSession();
+
+        $pourcentage = (float) $this->request->getPost('pourcentage');
+
+        if ($pourcentage < 0 || $pourcentage > 100) {
+            return $this->clientError('client/formEparge', 'Pourcentage Invalide.');
+        }
+
+        $this->epargneClientService->createEpargne($numero, (float)$pourcentage);
+
+    }
+
 }

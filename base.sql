@@ -68,3 +68,19 @@ CREATE TABLE commission_operateur (
 CREATE INDEX idx_prefixe_operateur ON prefixe_valable(operateur_id);
 CREATE INDEX idx_operation_date ON operation(date_operation);
 CREATE INDEX idx_operation_client ON operation(client_numero);
+
+CREATE TABLE epargne_client(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_numero INTEGER NOT NULL,
+    pourcentage NUMERIC,
+    date_ajout DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_numero) REFERENCES client(numero)
+)
+
+CREATE TABLE mouvement_epargne(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    client_numero INTEGER NOT NULL,
+    montant_epargne NUMERIC,
+    date_epargne DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (client_numero) REFERENCES client(numero)
+)

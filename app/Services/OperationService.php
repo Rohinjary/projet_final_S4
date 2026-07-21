@@ -42,6 +42,8 @@ class OperationService
         return $this->operationModel->calculerSolde($numero);
     }
 
+    
+
     public function getHistorique(string $numero, ?int $typeOperationId = null): array
     {
         return $this->operationModel->getHistorique($numero, $typeOperationId);

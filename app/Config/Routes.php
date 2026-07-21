@@ -24,6 +24,8 @@ $routes->post('client/traiter-retrait', 'Client\ClientController::traiterRetrait
 $routes->get('client/transfert', 'Client\ClientController::transfert');
 $routes->post('client/traiter-transfert', 'Client\ClientController::traiterTransfert');
 $routes->get('client/historique', 'Client\ClientController::historique');
+$routes->get('client/formEparge', 'Client\ClientController::formEpargne');
+$routes->get('client/traiterEpargne', 'Client\ClientController::traiterEpargne');
 $routes->get('client/deconnexion', 'Client\ClientController::deconnexion');
 
 // Authentification opérateur
