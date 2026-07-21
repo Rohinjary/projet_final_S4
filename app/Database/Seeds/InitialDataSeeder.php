@@ -49,6 +49,9 @@ class InitialDataSeeder extends Seeder
             }
         }
     }
+    //  private function promotion(int $principalId): void{
+    //     foreach ([])
+    //  }
 
     private function insererTypesOperations(): void
     {
@@ -73,4 +76,5 @@ class InitialDataSeeder extends Seeder
         }
     }
 
+   
 }

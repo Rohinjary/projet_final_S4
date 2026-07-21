@@ -65,6 +65,14 @@ CREATE TABLE commission_operateur (
     FOREIGN KEY (operateur_id) REFERENCES operateur(id)
 );
 
+//promotion
+CREATE TABLE promotion(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pourcentage NUMERIC NOT NULL CHECK (pourcentage >= 0 AND pourcentage <= 100)
+)
+
 CREATE INDEX idx_prefixe_operateur ON prefixe_valable(operateur_id);
 CREATE INDEX idx_operation_date ON operation(date_operation);
 CREATE INDEX idx_operation_client ON operation(client_numero);
+
+

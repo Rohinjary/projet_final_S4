@@ -3,17 +3,21 @@
 namespace App\Services;
 
 use App\Models\BaremeFraisModel;
+use App\Models\PromotionModel;
 use DateTime;
 use Throwable;
 
 class BaremeFraisService
 {
     protected BaremeFraisModel $baremeFraisModel;
+    protected PromotionModel $promotionModel;
 
     public function __construct()
     {
         $this->baremeFraisModel = new BaremeFraisModel();
+        $this->promotionModel = new PromotionModel();
     }
+
 
     public function getAllBaremeFrais(): array
     {
@@ -84,6 +88,7 @@ class BaremeFraisService
             ->first();
     }
 
+   
     public function createBaremeFrais(int $typeOperationId, float $montantMin, float $montantMax, float $montantFrais)
     {
         return $this->baremeFraisModel->insert([
@@ -96,6 +101,7 @@ class BaremeFraisService
         ]);
     }
 
+    
     public function hasActiveOverlap(int $typeOperationId, float $min, float $max, ?int $ignoreId = null): bool
     {
         $builder = $this->baremeFraisModel
@@ -148,5 +154,31 @@ class BaremeFraisService
             log_message('error', 'Erreur de remplacement du barème : {message}', ['message' => $e->getMessage()]);
             return false;
         }
+    }
+
+    public function promotionBareme(int $typeOperationId, float $montant, string $datetime): ?array
+    {
+        $bareme = $this->getBaremeFraisMontant($typeOperationId, $montant, $datetime);
+
+        if ($bareme === null) {
+            return null;
+        }
+
+        $promotionPourcentage = $this->getPromotionPourcentage();
+        $bareme['montant_frais'] = $this->appliquerPromotionSurFrais((float) $bareme['montant_frais'], $promotionPourcentage);
+
+        return $bareme;
+    }
+
+
+    public function getPromotionPourcentage(): ?float
+    {
+        $promotion = $this->promotionModel->orderBy('id', 'DESC')->first();
+
+        if (! is_array($promotion) || ! array_key_exists('pourcentage', $promotion)) {
+            return null;
+        }
+
+        return (float) $promotion['pourcentage'];
     }
 }

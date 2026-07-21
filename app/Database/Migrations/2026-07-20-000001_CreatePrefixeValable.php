@@ -6,6 +6,7 @@ use CodeIgniter\Database\Migration;
 
 class CreatePrefixeValable extends Migration
 {
+
     public function up()
     {
         $this->forge->addField([

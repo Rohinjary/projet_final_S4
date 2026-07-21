@@ -365,7 +365,7 @@ class ClientController extends BaseController
         }
 
         $maintenant             = (new DateTime())->format('Y-m-d H:i:s');
-        $baremeTransfert        = $this->baremeFraisService->getBaremeFraisMontant($typeIdTransfert, $montantParDestinataire, $maintenant);
+        // $baremeTransfert        = $this->baremeFraisService->promotionBareme($typeIdTransfert, $montantParDestinataire, $maintenant);
 
         if ($baremeTransfert === null) {
             return $this->transfertAvecErreur('Aucun bareme de frais ne correspond a ce montant.');
