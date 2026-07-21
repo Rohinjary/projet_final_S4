@@ -41,6 +41,13 @@ class CommissionController extends BaseController
             return redirect()->to(site_url('admin/commissions'))->with('error', 'Opérateur introuvable.');
         }
 
+        if ((int) $operateur['est_principal'] === 1) {
+            return redirect()->to(site_url('admin/commissions'))->with(
+                'error',
+                'MobiPay ne possède pas de taux de commission : il conserve séparément tous les frais de transfert.'
+            );
+        }
+
         $raw = str_replace(',', '.', trim((string) $this->request->getPost('pourcentage')));
         if ($raw === '' || ! is_numeric($raw)) {
             return redirect()->to(site_url('admin/commissions'))->with('error', 'Saisissez un pourcentage numérique.');
@@ -49,10 +56,6 @@ class CommissionController extends BaseController
         $pourcentage = (float) $raw;
         if ($pourcentage < 0 || $pourcentage > 100) {
             return redirect()->to(site_url('admin/commissions'))->with('error', 'La commission doit être comprise entre 0 % et 100 %.');
-        }
-
-        if ((int) $operateur['est_principal'] === 1) {
-            $pourcentage = 100.0;
         }
 
         if (! $this->commissionService->saveCommission($operateurId, $pourcentage)) {

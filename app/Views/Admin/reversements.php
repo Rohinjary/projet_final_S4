@@ -29,9 +29,9 @@
       </div>
 
       <section class="mp-card">
-        <div class="mp-card-body pb-2"><div class="mp-section-title">Détail des reversements</div><div class="mp-section-subtitle mt-1">Montant à envoyer = frais bruts collectés − commission conservée.</div></div>
+        <div class="mp-card-body pb-2"><div class="mp-section-title">Détail des reversements</div><div class="mp-section-subtitle mt-1">Montant à envoyer = montant transféré vers le partenaire + commission calculée sur le montant transféré. Les frais MobiPay restent séparés et ne sont pas déduits.</div></div>
         <div class="table-responsive"><table class="table table-mp align-middle mb-0">
-          <thead><tr><th>Opérateur</th><th>Préfixes</th><th class="text-end">Commission</th><th class="text-end">Opérations</th><th class="text-end">Frais bruts</th><th class="text-end">Commission conservée</th><th class="text-end">Montant à envoyer</th></tr></thead>
+          <thead><tr><th>Opérateur</th><th>Préfixes</th><th class="text-end">Taux</th><th class="text-end">Opérations</th><th class="text-end">Montant transféré</th><th class="text-end">Commission partenaire</th><th class="text-end">Montant à envoyer</th></tr></thead>
           <tbody>
           <?php if (empty($reversements)): ?><tr><td colspan="7" class="text-center text-muted py-5">Aucun opérateur partenaire configuré ou aucune opération sur la période.</td></tr>
           <?php else: foreach ($reversements as $ligne): ?>
@@ -40,8 +40,8 @@
               <td><?= esc($ligne['prefixes'] ? implode(', ', $ligne['prefixes']) : '—') ?></td>
               <td class="text-end"><?= number_format((float) $ligne['pourcentage'], 2, ',', ' ') ?> %</td>
               <td class="text-end"><?= (int) $ligne['nombre_operations'] ?></td>
-              <td class="text-end"><?= number_format((float) $ligne['frais_bruts'], 0, ',', ' ') ?> Ar</td>
-              <td class="text-end text-success"><?= number_format((float) $ligne['commission_retenue'], 0, ',', ' ') ?> Ar</td>
+              <td class="text-end"><?= number_format((float) $ligne['montant_transfere'], 0, ',', ' ') ?> Ar</td>
+              <td class="text-end text-primary"><?= number_format((float) $ligne['commission_operateur'], 0, ',', ' ') ?> Ar</td>
               <td class="text-end fw-bold text-warning fs-6"><?= number_format((float) $ligne['montant_a_envoyer'], 0, ',', ' ') ?> Ar</td>
             </tr>
           <?php endforeach; endif; ?>

@@ -17,6 +17,7 @@ class OperationModel extends Model
         'montant',
         'frais',
         'frais_retrait',
+        'commission_operateur',
         'reference_transfert',
         'nb_destinataires',
         'date_operation',
@@ -31,7 +32,8 @@ class OperationModel extends Model
         ?string $destinataireNumero = null,
         float $fraisRetrait = 0.0,
         ?string $referenceTransfert = null,
-        int $nbDestinataires = 1
+        int $nbDestinataires = 1,
+        float $commissionOperateur = 0.0
     ) {
         return $this->insert([
             'client_numero'        => $clientNumero,
@@ -40,6 +42,7 @@ class OperationModel extends Model
             'montant'              => $montant,
             'frais'                => $frais,
             'frais_retrait'        => $fraisRetrait,
+            'commission_operateur'  => $commissionOperateur,
             'reference_transfert'  => $referenceTransfert,
             'nb_destinataires'     => $nbDestinataires,
             'date_operation'       => (new DateTime())->format('Y-m-d H:i:s'),
@@ -49,7 +52,7 @@ class OperationModel extends Model
     // Calcule le solde en repartant de zero a partir de toutes les operations.
     // depot        -> +montant (client)          / -frais (client)
     // retrait      -> -(montant + frais) (client)
-    // transfert    -> -(montant + frais + frais_retrait) (client emetteur)
+    // transfert    -> -(montant + frais + frais_retrait + commission_operateur) (client emetteur)
     //                / +(montant + frais_retrait) (destinataire si le frais de retrait est inclus)
     public function calculerSolde(string $numero): float
     {
@@ -73,7 +76,7 @@ class OperationModel extends Model
                 CASE
                     WHEN t.libelle = 'depot' THEN o.frais
                     WHEN t.libelle = 'retrait' THEN o.montant + o.frais
-                    WHEN t.libelle = 'transfert' THEN o.montant + o.frais + COALESCE(o.frais_retrait, 0)
+                    WHEN t.libelle = 'transfert' THEN o.montant + o.frais + COALESCE(o.frais_retrait, 0) + COALESCE(o.commission_operateur, 0)
                     ELSE 0
                 END
             ), 0) AS total
@@ -110,6 +113,7 @@ class OperationModel extends Model
             $row['montant']          = (float) $row['montant'];
             $row['frais']            = (float) $row['frais'];
             $row['frais_retrait']    = (float) ($row['frais_retrait'] ?? 0);
+            $row['commission_operateur'] = (float) ($row['commission_operateur'] ?? 0);
             $row['nb_destinataires'] = (int) ($row['nb_destinataires'] ?? 1);
             $row['reference_transfert'] = $row['reference_transfert'] ?? null;
             $row['destinataires_affiches'] = '';
@@ -136,6 +140,7 @@ class OperationModel extends Model
                 $historique[$index]['montant'] = 0.0;
                 $historique[$index]['frais'] = 0.0;
                 $historique[$index]['frais_retrait'] = 0.0;
+                $historique[$index]['commission_operateur'] = 0.0;
                 $historique[$index]['nb_destinataires'] = 0;
                 $historique[$index]['destinataires_liste'] = [];
                 $historique[$index]['destinataires_affiches'] = '';
@@ -147,6 +152,7 @@ class OperationModel extends Model
             $historique[$index]['montant'] += (float) $row['montant'];
             $historique[$index]['frais'] += (float) $row['frais'];
             $historique[$index]['frais_retrait'] += (float) ($row['frais_retrait'] ?? 0);
+            $historique[$index]['commission_operateur'] += (float) ($row['commission_operateur'] ?? 0);
             $historique[$index]['nb_destinataires'] = max(
                 (int) $historique[$index]['nb_destinataires'],
                 (int) ($row['nb_destinataires'] ?? 1)

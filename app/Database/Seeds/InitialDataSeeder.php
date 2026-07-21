@@ -12,7 +12,6 @@ class InitialDataSeeder extends Seeder
         $this->insererPrefixes($principalId);
         $this->insererTypesOperations();
         $this->insererUtilisateur($principalId);
-        $this->insererCommissionPrincipale($principalId);
     }
 
     private function insererOperateurPrincipal(): int
@@ -74,15 +73,4 @@ class InitialDataSeeder extends Seeder
         }
     }
 
-    private function insererCommissionPrincipale(int $principalId): void
-    {
-        $row = $this->db->table('commission_operateur')->where('operateur_id', $principalId)->get()->getRowArray();
-        if ($row === null) {
-            $this->db->table('commission_operateur')->insert([
-                'operateur_id' => $principalId,
-                'pourcentage'  => 100,
-                'date_ajout'   => date('Y-m-d H:i:s'),
-            ]);
-        }
-    }
 }
