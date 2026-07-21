@@ -18,14 +18,14 @@
       <?php if (session()->getFlashdata('error')): ?><div class="alert alert-danger"><?= esc(session()->getFlashdata('error')) ?></div><?php endif; ?>
 
       <div class="alert alert-info">
-        <strong>Règle de calcul :</strong> pour un opérateur partenaire, la commission est la part des frais que MobiPay conserve. Le reste est affiché dans « Montants à envoyer ». Pour l’opérateur principal, les frais restent intégralement chez MobiPay.
+        <strong>Règle de calcul :</strong> pour un partenaire, commission = montant transféré × taux / 100, puis montant à envoyer = montant transféré + commission. Les frais de transfert restent intégralement le gain brut de MobiPay. Aucun taux de commission n'est appliqué à MobiPay.
       </div>
 
       <section class="mp-card">
         <div class="mp-card-body pb-2"><div class="mp-section-title">Taux de commission</div></div>
         <div class="table-responsive">
           <table class="table table-mp align-middle mb-0">
-            <thead><tr><th>Opérateur</th><th>Type</th><th class="text-end">Préfixes</th><th>Commission conservée</th><th class="text-end">Action</th></tr></thead>
+            <thead><tr><th>Opérateur</th><th>Type</th><th class="text-end">Préfixes</th><th>Taux de commission partenaire</th><th class="text-end">Action</th></tr></thead>
             <tbody>
             <?php if (empty($operateurs)): ?>
               <tr><td colspan="5" class="text-center text-muted py-5">Aucun opérateur configuré.</td></tr>
@@ -36,16 +36,20 @@
                 <td><span class="badge <?= $principal ? 'badge-soft-success' : 'badge-soft-primary' ?>"><?= $principal ? 'Principal' : 'Partenaire' ?></span></td>
                 <td class="text-end"><?= (int) $operateur['nombre_prefixes'] ?></td>
                 <td style="min-width:240px">
-                  <form class="d-flex gap-2 align-items-center" method="post" action="<?= site_url('admin/commissions/' . $operateur['id']) ?>">
-                    <?= csrf_field() ?>
-                    <div class="input-group input-group-sm">
-                      <input class="form-control" type="number" name="pourcentage" min="0" max="100" step="0.01" value="<?= $principal ? '100' : esc((string) $operateur['pourcentage']) ?>" <?= $principal ? 'readonly' : '' ?> required>
-                      <span class="input-group-text">%</span>
-                    </div>
-                    <button class="btn btn-sm btn-primary" type="submit" <?= $principal ? 'disabled' : '' ?>><i class="bi bi-check-lg"></i></button>
-                  </form>
+                  <?php if ($principal): ?>
+                    <span class="text-muted">Non applicable</span>
+                  <?php else: ?>
+                    <form class="d-flex gap-2 align-items-center" method="post" action="<?= site_url('admin/commissions/' . $operateur['id']) ?>">
+                      <?= csrf_field() ?>
+                      <div class="input-group input-group-sm">
+                        <input class="form-control" type="number" name="pourcentage" min="0" max="100" step="0.01" value="<?= esc((string) $operateur['pourcentage']) ?>" required>
+                        <span class="input-group-text">%</span>
+                      </div>
+                      <button class="btn btn-sm btn-primary" type="submit"><i class="bi bi-check-lg"></i></button>
+                    </form>
+                  <?php endif; ?>
                 </td>
-                <td class="text-end"><?= $principal ? '<span class="text-muted">Fixe</span>' : '<span class="text-muted">Modifiable</span>' ?></td>
+                <td class="text-end"><?= $principal ? '<span class="text-muted">Tous les frais restent à MobiPay</span>' : '<span class="text-muted">Sur le montant transféré</span>' ?></td>
               </tr>
             <?php endforeach; endif; ?>
             </tbody>

@@ -50,7 +50,7 @@
                     <td class="fw-semibold"><?= esc($operateur['nom']) ?></td>
                     <td><span class="badge <?= (int) $operateur['est_principal'] === 1 ? 'badge-soft-success' : 'badge-soft-primary' ?>"><?= (int) $operateur['est_principal'] === 1 ? 'Principal' : 'Partenaire' ?></span></td>
                     <td class="text-end"><?= (int) $operateur['nombre_prefixes'] ?></td>
-                    <td class="text-end"><?= (int) $operateur['est_principal'] === 1 ? '100,00 %' : number_format((float) $operateur['pourcentage'], 2, ',', ' ') . ' %' ?></td>
+                    <td class="text-end"><?= (int) $operateur['est_principal'] === 1 ? '100,00 % des frais' : number_format((float) $operateur['pourcentage'], 2, ',', ' ') . ' % du montant' ?></td>
                     <td class="text-end"><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editOperator<?= (int) $operateur['id'] ?>"><i class="bi bi-pencil"></i></button></td>
                   </tr>
                   <div class="modal fade" id="editOperator<?= (int) $operateur['id'] ?>" tabindex="-1">

@@ -29,31 +29,33 @@
       <div class="row g-3 mb-4">
         <div class="col-md-3"><section class="mp-card mp-card-body h-100"><div class="stat-label">Frais bruts collectés</div><div class="stat-value"><?= number_format((float) $gains['total'], 0, ',', ' ') ?> Ar</div><div class="stat-sub"><?= (int) $gains['operations_avec_frais'] ?> opération(s) avec frais</div></section></div>
         <div class="col-md-3"><section class="mp-card mp-card-body stat-success h-100"><div class="stat-label">Mes gains propres</div><div class="stat-value"><?= number_format((float) $gains['gain_prefixes_principaux'], 0, ',', ' ') ?> Ar</div><div class="stat-sub">Frais de mes propres préfixes</div></section></div>
-        <div class="col-md-3"><section class="mp-card mp-card-body stat-success h-100"><div class="stat-label">Commissions partenaires</div><div class="stat-value"><?= number_format((float) $gains['commissions_partenaires'], 0, ',', ' ') ?> Ar</div><div class="stat-sub">Part conservée sur les frais partenaires</div></section></div>
+        <div class="col-md-3"><section class="mp-card mp-card-body stat-success h-100"><div class="stat-label">Gains sur partenaires</div><div class="stat-value"><?= number_format((float) $gains['gains_operations_partenaires'], 0, ',', ' ') ?> Ar</div><div class="stat-sub">Frais de transfert conservés intégralement</div></section></div>
         <div class="col-md-3"><section class="mp-card mp-card-body stat-warning h-100"><div class="stat-label">À envoyer aux partenaires</div><div class="stat-value"><?= number_format((float) $gains['a_reverser'], 0, ',', ' ') ?> Ar</div><div class="stat-sub"><a href="<?= site_url('admin/reversements?mois=' . $mois . '&annee=' . $annee) ?>">Voir le détail</a></div></section></div>
       </div>
 
       <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <span><strong>Total de mes gains :</strong> frais propres + commissions conservées</span>
+        <span><strong>Total de mes gains :</strong> total des frais de transfert encaissés, sans déduction des commissions partenaires</span>
         <span class="fs-5 fw-bold"><?= number_format((float) $gains['mes_gains'], 0, ',', ' ') ?> Ar</span>
       </div>
 
       <section class="mp-card mb-4">
-        <div class="mp-card-body pb-2"><div class="mp-section-title">Répartition par opérateur</div><div class="mp-section-subtitle mt-1">Les lignes partenaires distinguent votre commission du montant à envoyer.</div></div>
+        <div class="mp-card-body pb-2"><div class="mp-section-title">Répartition par opérateur</div><div class="mp-section-subtitle mt-1">Les frais de transfert constituent le gain brut MobiPay. La commission partenaire, calculée sur le montant transféré, est comptabilisée séparément et ajoutée au reversement.</div></div>
         <div class="table-responsive">
           <table class="table table-mp align-middle mb-0">
-            <thead><tr><th>Opérateur</th><th>Préfixes</th><th class="text-end">Taux</th><th class="text-end">Opérations</th><th class="text-end">Frais bruts</th><th class="text-end">Mon gain</th><th class="text-end">À envoyer</th></tr></thead>
+            <thead><tr><th>Opérateur</th><th>Préfixes</th><th class="text-end">Taux</th><th class="text-end">Opérations</th><th class="text-end">Frais bruts</th><th class="text-end">Montant transféré</th><th class="text-end">Commission partenaire</th><th class="text-end">Gain brut MobiPay</th><th class="text-end">À envoyer</th></tr></thead>
             <tbody>
             <?php if (empty($gains['par_operateur'])): ?>
-              <tr><td colspan="7" class="text-center text-muted py-5">Aucun frais encaissé pour cette période.</td></tr>
+              <tr><td colspan="9" class="text-center text-muted py-5">Aucun frais encaissé pour cette période.</td></tr>
             <?php else: foreach ($gains['par_operateur'] as $ligne): ?>
               <tr>
                 <td><span class="fw-semibold"><?= esc($ligne['nom']) ?></span> <span class="badge <?= $ligne['est_principal'] ? 'badge-soft-success' : 'badge-soft-primary' ?>"><?= $ligne['est_principal'] ? 'Principal' : 'Partenaire' ?></span></td>
                 <td><?= esc($ligne['prefixes'] ? implode(', ', $ligne['prefixes']) : '—') ?></td>
-                <td class="text-end"><?= number_format((float) $ligne['pourcentage'], 2, ',', ' ') ?> %</td>
+                <td class="text-end"><?= $ligne['est_principal'] ? '—' : number_format((float) $ligne['pourcentage'], 2, ',', ' ') . ' %' ?></td>
                 <td class="text-end"><?= (int) $ligne['nombre_operations'] ?></td>
                 <td class="text-end"><?= number_format((float) $ligne['frais_bruts'], 0, ',', ' ') ?> Ar</td>
-                <td class="text-end text-success fw-semibold"><?= number_format((float) $ligne['commission_retenue'], 0, ',', ' ') ?> Ar</td>
+                <td class="text-end"><?= number_format((float) $ligne['montant_transfere'], 0, ',', ' ') ?> Ar</td>
+                <td class="text-end text-primary"><?= number_format((float) $ligne['commission_operateur'], 0, ',', ' ') ?> Ar</td>
+                <td class="text-end text-success fw-semibold"><?= number_format((float) $ligne['gain_retenu'], 0, ',', ' ') ?> Ar</td>
                 <td class="text-end <?= (float) $ligne['montant_a_envoyer'] > 0 ? 'text-warning fw-semibold' : 'text-muted' ?>"><?= number_format((float) $ligne['montant_a_envoyer'], 0, ',', ' ') ?> Ar</td>
               </tr>
             <?php endforeach; endif; ?>

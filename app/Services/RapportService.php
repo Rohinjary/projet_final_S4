@@ -20,10 +20,14 @@ class RapportService
     }
 
     /**
-     * Répartition mensuelle des frais :
-     * - préfixe principal : 100 % du frais = gain propre ;
-     * - préfixe partenaire : le pourcentage configuré est la commission conservée,
-     *   le solde est le montant à reverser au partenaire.
+     * Répartition mensuelle des frais et des reversements :
+     * - une opération destinée à un préfixe principal reste intégralement chez MobiPay ;
+     * - aucun taux de commission n'est appliqué à MobiPay : l'opérateur principal
+     *   conserve séparément la totalité de ses frais de transfert ;
+     * - pour un opérateur partenaire, la commission est calculée sur le montant transféré ;
+     * - pour un transfert partenaire : montant à envoyer = montant transféré + commission partenaire ;
+     * - les frais de transfert restent intégralement un gain brut MobiPay. La commission
+     *   partenaire est une obligation distincte et n'est pas déduite de ces frais.
      */
     public function getGains(int $year, int $month): array
     {
@@ -32,45 +36,83 @@ class RapportService
         $configuration = $this->operatorConfiguration();
 
         $result = [
-            'retrait'                 => 0.0,
-            'transfert'               => 0.0,
-            'depot'                   => 0.0,
-            'total'                   => 0.0,
-            'gain_prefixes_principaux'=> 0.0,
-            'commissions_partenaires' => 0.0,
-            'mes_gains'               => 0.0,
-            'a_reverser'              => 0.0,
-            'operations_avec_frais'   => 0,
-            'par_operateur'           => [],
+            'retrait'                       => 0.0,
+            'transfert'                     => 0.0,
+            'depot'                         => 0.0,
+            'total'                         => 0.0,
+            'gain_prefixes_principaux'      => 0.0,
+            'gains_operations_partenaires'  => 0.0,
+            'commissions_dues_partenaires'  => 0.0,
+            // Alias conservé pour ne pas casser d'éventuels appels existants.
+            'commissions_partenaires'       => 0.0,
+            'mes_gains'                     => 0.0,
+            'a_reverser'                    => 0.0,
+            'operations_avec_frais'         => 0,
+            'par_operateur'                 => [],
         ];
 
         foreach ($operations as $operation) {
             $frais = max(0.0, (float) $operation['frais']);
-            if ($frais <= 0) {
+            $type = $types[(int) $operation['type_operation_id']] ?? 'autre';
+            $estTransfert = $type === 'transfert';
+
+            // Les dépôts sans frais n'ont aucun impact sur les gains ou reversements.
+            if ($frais <= 0 && ! $estTransfert) {
                 continue;
             }
 
-            $type = $types[(int) $operation['type_operation_id']] ?? 'autre';
-            if (array_key_exists($type, $result)) {
-                $result[$type] += $frais;
+            if ($frais > 0) {
+                if (array_key_exists($type, $result)) {
+                    $result[$type] += $frais;
+                }
+                $result['total'] += $frais;
+                $result['operations_avec_frais']++;
             }
-            $result['total'] += $frais;
-            $result['operations_avec_frais']++;
 
-            $prefixe = substr((string) $operation['client_numero'], 0, 3);
+            /*
+             * Pour un transfert, l'opérateur bénéficiaire est déterminé avec le
+             * numéro destinataire. L'ancien calcul utilisait client_numero
+             * (l'émetteur), ce qui classait à tort le transfert chez MobiPay.
+             */
+            $numeroOperateur = (string) $operation['client_numero'];
+            if ($estTransfert && ! empty($operation['destinataire_numero'])) {
+                $numeroOperateur = (string) $operation['destinataire_numero'];
+            }
+
+            $prefixe = substr($numeroOperateur, 0, 3);
             $operateurId = $configuration['prefix_to_operator'][$prefixe] ?? $configuration['principal_id'];
             $operateur = $configuration['operators'][$operateurId] ?? $configuration['principal'];
             $estPrincipal = (int) ($operateur['est_principal'] ?? 0) === 1;
-            $pourcentage = $estPrincipal ? 100.0 : ($configuration['commissions'][$operateurId] ?? 0.0);
-            $commissionRetenue = $estPrincipal ? $frais : round($frais * $pourcentage / 100, 2);
-            $aReverser = max(0.0, $frais - $commissionRetenue);
+            // Le taux de commission ne concerne que les partenaires.
+            // MobiPay n'a pas de commission sur le montant : il conserve séparément
+            // la totalité des frais de transfert encaissés.
+            $pourcentage = $estPrincipal ? 0.0 : ($configuration['commissions'][$operateurId] ?? 0.0);
+
+            $montantTransfere = (! $estPrincipal && $estTransfert)
+                ? max(0.0, (float) $operation['montant'])
+                : 0.0;
+            $commissionOperateur = (! $estPrincipal && $estTransfert)
+                ? round($montantTransfere * $pourcentage / 100, 2)
+                : 0.0;
+            // Les frais et la commission sont deux flux différents :
+            // MobiPay conserve l'intégralité des frais encaissés, y compris lorsque
+            // le transfert est destiné à un opérateur partenaire.
+            $gainRetenu = $frais;
+            $aReverser = $estPrincipal
+                ? 0.0
+                : $montantTransfere + $commissionOperateur;
 
             if ($estPrincipal) {
-                $result['gain_prefixes_principaux'] += $frais;
+                $result['gain_prefixes_principaux'] += $gainRetenu;
             } else {
-                $result['commissions_partenaires'] += $commissionRetenue;
+                $result['gains_operations_partenaires'] += $gainRetenu;
+                $result['commissions_dues_partenaires'] += $commissionOperateur;
+                // Alias historique : il représente désormais la commission due
+                // au partenaire, et non une partie retranchée des frais MobiPay.
+                $result['commissions_partenaires'] += $commissionOperateur;
             }
-            $result['mes_gains'] += $commissionRetenue;
+
+            $result['mes_gains'] += $gainRetenu;
             $result['a_reverser'] += $aReverser;
 
             if (! isset($result['par_operateur'][$operateurId])) {
@@ -82,6 +124,10 @@ class RapportService
                     'prefixes'           => $configuration['operator_prefixes'][$operateurId] ?? [],
                     'nombre_operations'  => 0,
                     'frais_bruts'        => 0.0,
+                    'montant_transfere'  => 0.0,
+                    'commission_operateur'=> 0.0,
+                    'gain_retenu'        => 0.0,
+                    // Alias de compatibilité avec les anciennes vues.
                     'commission_retenue' => 0.0,
                     'montant_a_envoyer'  => 0.0,
                 ];
@@ -89,7 +135,10 @@ class RapportService
 
             $result['par_operateur'][$operateurId]['nombre_operations']++;
             $result['par_operateur'][$operateurId]['frais_bruts'] += $frais;
-            $result['par_operateur'][$operateurId]['commission_retenue'] += $commissionRetenue;
+            $result['par_operateur'][$operateurId]['montant_transfere'] += $montantTransfere;
+            $result['par_operateur'][$operateurId]['commission_operateur'] += $commissionOperateur;
+            $result['par_operateur'][$operateurId]['gain_retenu'] += $gainRetenu;
+            $result['par_operateur'][$operateurId]['commission_retenue'] += $gainRetenu;
             $result['par_operateur'][$operateurId]['montant_a_envoyer'] += $aReverser;
         }
 
