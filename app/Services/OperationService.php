@@ -21,7 +21,8 @@ class OperationService
         ?string $destinataireNumero = null,
         float $fraisRetrait = 0.0,
         ?string $referenceTransfert = null,
-        int $nbDestinataires = 1
+        int $nbDestinataires = 1,
+        float $commissionOperateur = 0.0
     ) {
         return $this->operationModel->enregistrer(
             $clientNumero,
@@ -31,7 +32,8 @@ class OperationService
             $destinataireNumero,
             $fraisRetrait,
             $referenceTransfert,
-            $nbDestinataires
+            $nbDestinataires,
+            $commissionOperateur
         );
     }
 

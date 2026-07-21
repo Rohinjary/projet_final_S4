@@ -5,7 +5,9 @@ namespace App\Controllers\Client;
 use App\Controllers\BaseController;
 use App\Services\BaremeFraisService;
 use App\Services\ClientService;
+use App\Services\CommissionOperateurService;
 use App\Services\OperationService;
+use App\Services\OperateurService;
 use App\Services\PrefixeValableService;
 use App\Services\TypeOperationService;
 use DateTime;
@@ -18,6 +20,8 @@ class ClientController extends BaseController
     private PrefixeValableService $prefixeValableService;
     private TypeOperationService $typeOperationService;
     private BaremeFraisService $baremeFraisService;
+    private CommissionOperateurService $commissionOperateurService;
+    private OperateurService $operateurService;
 
     public function __construct()
     {
@@ -26,6 +30,8 @@ class ClientController extends BaseController
         $this->prefixeValableService = new PrefixeValableService();
         $this->typeOperationService = new TypeOperationService();
         $this->baremeFraisService = new BaremeFraisService();
+        $this->commissionOperateurService = new CommissionOperateurService();
+        $this->operateurService = new OperateurService();
     }
 
     private function verifierSession()
@@ -354,6 +360,10 @@ class ClientController extends BaseController
 
         $montantParDestinataire = (float) ($montant / $nombreDestinataires);
         $typeIdTransfert        = $this->getTypeOperationIdParLibelle('transfert');
+        if ($typeIdTransfert === null) {
+            return $this->transfertAvecErreur('Le type d operation transfert n est pas configure.');
+        }
+
         $maintenant             = (new DateTime())->format('Y-m-d H:i:s');
         $baremeTransfert        = $this->baremeFraisService->getBaremeFraisMontant($typeIdTransfert, $montantParDestinataire, $maintenant);
 
@@ -364,7 +374,8 @@ class ClientController extends BaseController
         $fraisTransfert = (float) $baremeTransfert['montant_frais'];
         $fraisRetrait   = 0.0;
         $memeOperateur  = true;
-        $destinataireExterne = false;
+        $commissionsParDestinataire = [];
+        $commissionTotale = 0.0;
 
         foreach ($destinataires as $destinataire) {
             if ($destinataire === $numero) {
@@ -378,23 +389,45 @@ class ClientController extends BaseController
             $prefixeDestinataireValide = $this->prefixeEstValide(substr($destinataire, 0, 3));
 
             if (! $prefixeDestinataireValide) {
-                $destinataireExterne = true;
-                continue;
+                return $this->transfertAvecErreur(
+                    'Le prefixe du numero ' . $destinataire . ' n est rattache a aucun operateur configure.'
+                );
             }
 
             if (! $this->clientService->existeParNumero($destinataire)) {
                 return $this->transfertAvecErreur('Numero destinataire introuvable : ' . $destinataire . '.');
             }
 
-            $memeOperateur = $memeOperateur && $this->memeOperateur($numero, $destinataire);
-        }
+            $operateurDestinataireId = $this->getOperateurIdParNumero($destinataire);
+            $estMemeOperateur = $this->memeOperateur($numero, $destinataire);
+            $memeOperateur = $memeOperateur && $estMemeOperateur;
+            $commissionOperateur = 0.0;
 
-        if ($destinataireExterne && $nombreDestinataires > 1) {
-            return $this->transfertAvecErreur('Un envoi vers un operateur externe doit se faire vers un seul numero.');
-        }
+            if (! $estMemeOperateur) {
+                if ($operateurDestinataireId === null) {
+                    return $this->transfertAvecErreur('Aucun operateur ni taux de commission n est configure pour le numero ' . $destinataire . '.');
+                }
 
-        if ($destinataireExterne && $inclureFraisRetrait) {
-            return $this->transfertAvecErreur('L option frais de retrait n est pas disponible pour un operateur externe.');
+                $operateurDestinataire = $this->operateurService->getOperateurById($operateurDestinataireId);
+                $estOperateurPrincipal = (int) ($operateurDestinataire['est_principal'] ?? 0) === 1;
+
+                if (! $estOperateurPrincipal) {
+                    $configurationCommission = $this->commissionOperateurService
+                        ->getCommissionByOperateurId($operateurDestinataireId);
+
+                    if ($configurationCommission === null) {
+                        return $this->transfertAvecErreur(
+                            'Aucun taux de commission n est configure pour l operateur du numero ' . $destinataire . '.'
+                        );
+                    }
+
+                    $tauxCommission = max(0.0, (float) $configurationCommission['pourcentage']);
+                    $commissionOperateur = round($montantParDestinataire * $tauxCommission / 100, 2);
+                }
+            }
+
+            $commissionsParDestinataire[$destinataire] = $commissionOperateur;
+            $commissionTotale += $commissionOperateur;
         }
 
         if ($nombreDestinataires > 1 && ! $memeOperateur) {
@@ -407,6 +440,10 @@ class ClientController extends BaseController
 
         if ($inclureFraisRetrait) {
             $typeIdRetrait = $this->getTypeOperationIdParLibelle('retrait');
+            if ($typeIdRetrait === null) {
+                return $this->transfertAvecErreur('Le type d operation retrait n est pas configure.');
+            }
+
             $baremeRetrait = $this->baremeFraisService->getBaremeFraisMontant($typeIdRetrait, $montantParDestinataire, $maintenant);
 
             if ($baremeRetrait === null) {
@@ -416,7 +453,10 @@ class ClientController extends BaseController
             $fraisRetrait = (float) $baremeRetrait['montant_frais'];
         }
 
-        $soldeTotal = $nombreDestinataires * ($montantParDestinataire + $fraisTransfert + $fraisRetrait);
+        // Débit client : montant transféré + frais MobiPay + commission partenaire.
+        // Les frais et la commission restent deux flux distincts.
+        $soldeTotal = $nombreDestinataires * ($montantParDestinataire + $fraisTransfert + $fraisRetrait)
+            + $commissionTotale;
         $solde = $this->operationService->calculerSolde($numero);
 
         if ($solde < $soldeTotal) {
@@ -434,14 +474,22 @@ class ClientController extends BaseController
                 $destinataire,
                 $fraisRetrait,
                 $referenceTransfert,
-                $nombreDestinataires
+                $nombreDestinataires,
+                (float) ($commissionsParDestinataire[$destinataire] ?? 0)
             );
         }
 
-        session()->setFlashdata(
-            'succes',
-            'Transfert de ' . number_format($montant, 0, ',', ' ') . ' Ar vers ' . $nombreDestinataires . ' destinataire(s) effectue avec succes.'
-        );
+        $messageSucces = 'Transfert de ' . number_format($montant, 0, ',', ' ')
+            . ' Ar vers ' . $nombreDestinataires . ' destinataire(s) effectue avec succes.';
+        if ($commissionTotale > 0) {
+            $messageSucces .= ' Commission partenaire : '
+                . number_format($commissionTotale, 0, ',', ' ')
+                . ' Ar. Total debite : '
+                . number_format($soldeTotal, 0, ',', ' ')
+                . ' Ar.';
+        }
+
+        session()->setFlashdata('succes', $messageSucces);
 
         return redirect()->to('/client/accueil');
     }

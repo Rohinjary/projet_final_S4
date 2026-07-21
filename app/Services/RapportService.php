@@ -91,9 +91,17 @@ class RapportService
             $montantTransfere = (! $estPrincipal && $estTransfert)
                 ? max(0.0, (float) $operation['montant'])
                 : 0.0;
-            $commissionOperateur = (! $estPrincipal && $estTransfert)
-                ? round($montantTransfere * $pourcentage / 100, 2)
-                : 0.0;
+            $commissionEnregistree = $operation['commission_operateur'] ?? null;
+            $commissionOperateur = 0.0;
+            if (! $estPrincipal && $estTransfert) {
+                // Une opération corrigée conserve la commission calculée lors
+                // du transfert. Une modification ultérieure du taux ne change
+                // donc pas les anciens reversements. Les anciennes lignes qui
+                // n'ont pas encore de valeur utilisent le taux courant.
+                $commissionOperateur = $commissionEnregistree !== null
+                    ? max(0.0, (float) $commissionEnregistree)
+                    : round($montantTransfere * $pourcentage / 100, 2);
+            }
             // Les frais et la commission sont deux flux différents :
             // MobiPay conserve l'intégralité des frais encaissés, y compris lorsque
             // le transfert est destiné à un opérateur partenaire.
@@ -201,13 +209,22 @@ class RapportService
             $type = $types[(int) $operation['type_operation_id']] ?? '';
             $montant = (float) $operation['montant'];
             $frais = (float) $operation['frais'];
+            $fraisRetrait = (float) ($operation['frais_retrait'] ?? 0);
+            $commissionOperateur = (float) ($operation['commission_operateur'] ?? 0);
             $date = (string) $operation['date_operation'];
 
             if (isset($accounts[$source])) {
                 if ($type === 'depot') {
                     $accounts[$source]['solde'] += $montant - $frais;
-                } elseif ($type === 'retrait' || $type === 'transfert') {
+                } elseif ($type === 'retrait') {
                     $accounts[$source]['solde'] -= ($montant + $frais);
+                } elseif ($type === 'transfert') {
+                    $accounts[$source]['solde'] -= (
+                        $montant
+                        + $frais
+                        + $fraisRetrait
+                        + $commissionOperateur
+                    );
                 }
                 $accounts[$source]['nb_operations']++;
                 $accounts[$source]['derniere_activite'] = $date;
@@ -215,7 +232,7 @@ class RapportService
             }
 
             if ($type === 'transfert' && $destinataire !== '' && isset($accounts[$destinataire])) {
-                $accounts[$destinataire]['solde'] += $montant;
+                $accounts[$destinataire]['solde'] += $montant + $fraisRetrait;
                 $accounts[$destinataire]['nb_operations']++;
                 if ($accounts[$destinataire]['derniere_activite'] === null || $date > $accounts[$destinataire]['derniere_activite']) {
                     $accounts[$destinataire]['derniere_activite'] = $date;

@@ -50,6 +50,10 @@
 							if ($op['type_libelle'] === 'transfert' && $estEntree) {
 								$montantAffiche += (float) ($op['frais_retrait'] ?? 0);
 							}
+							$totalDebite = $montantAffiche
+								+ (float) ($op['frais'] ?? 0)
+								+ (float) ($op['frais_retrait'] ?? 0)
+								+ (float) ($op['commission_operateur'] ?? 0);
 							$nbDestinataires = (int) ($op['nb_destinataires'] ?? 1);
 							$destinatairesAffiches = trim((string) ($op['destinataires_affiches'] ?? ''));
 							$dateOperation = $op['date_operation'];
@@ -95,6 +99,12 @@
 									<?php endif; ?>
 									<?php if ((float) ($op['frais_retrait'] ?? 0) > 0 && $estSortie) : ?>
 										<div class="small text-mp-muted">frais retrait : <?= number_format($op['frais_retrait'], 0, ',', ' ') ?> Ar</div>
+									<?php endif; ?>
+									<?php if ((float) ($op['commission_operateur'] ?? 0) > 0 && $estSortie) : ?>
+										<div class="small text-mp-muted">commission partenaire : <?= number_format($op['commission_operateur'], 0, ',', ' ') ?> Ar</div>
+									<?php endif; ?>
+									<?php if ($op['type_libelle'] === 'transfert' && $estSortie) : ?>
+										<div class="small fw-semibold">debit total : <?= number_format($totalDebite, 0, ',', ' ') ?> Ar</div>
 									<?php endif; ?>
 								</div>
 							</div>
