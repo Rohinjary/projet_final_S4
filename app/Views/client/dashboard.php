@@ -58,6 +58,13 @@ $montantAffiche = (float) $op['montant'];
 if ($op['type_libelle'] === 'transfert' && $estEntree) {
 	$montantAffiche += (float) ($op['frais_retrait'] ?? 0);
 }
+$commissionOperateur = (float) ($op['commission_operateur'] ?? 0);
+$fraisTransfert = (float) ($op['frais'] ?? 0);
+$fraisRetrait = (float) ($op['frais_retrait'] ?? 0);
+$totalDebite = $montantAffiche;
+if ($op['type_libelle'] === 'transfert' && $estSortie) {
+	$totalDebite = $montantAffiche + $fraisTransfert + $fraisRetrait + $commissionOperateur;
+}
 $nbDestinataires = (int) ($op['nb_destinataires'] ?? 1);
 $destinatairesAffiches = trim((string) ($op['destinataires_affiches'] ?? ''));
 $dateOperation = $op['date_operation'];
@@ -83,8 +90,16 @@ if ($dateOperation) {
 <div class="small text-mp-muted"><?= esc($destinatairesAffiches) ?></div>
 <?php endif; ?>
 </div>
+<div class="text-end">
 <div class="fw-bold <?= $estDepot || $estEntree ? 'text-success' : '' ?>">
-<?= $estDepot || $estEntree ? '+' : '-' ?><?= number_format($montantAffiche, 0, ',', ' ') ?> Ar
+<?= $estDepot || $estEntree ? '+' : '-' ?><?= number_format($totalDebite, 0, ',', ' ') ?> Ar
+</div>
+<?php if ($op['type_libelle'] === 'transfert' && $estSortie) : ?>
+<div class="small text-mp-muted">envoye : <?= number_format($montantAffiche, 0, ',', ' ') ?> Ar</div>
+<?php if ($commissionOperateur > 0) : ?>
+<div class="small text-mp-muted">commission : <?= number_format($commissionOperateur, 0, ',', ' ') ?> Ar</div>
+<?php endif; ?>
+<?php endif; ?>
 </div>
 </div>
 <?php endforeach; ?>

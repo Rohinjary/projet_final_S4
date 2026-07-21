@@ -36,7 +36,7 @@
           <section class="mp-card mp-card-body stat-success h-100">
             <div class="stat-label">Mes gains du mois</div>
             <div class="stat-value"><?= number_format((float) ($currentGains['mes_gains'] ?? 0), 0, ',', ' ') ?> Ar</div>
-            <div class="stat-sub">Frais propres + commissions partenaires</div>
+            <div class="stat-sub">Frais propres + gains nets partenaires</div>
           </section>
         </div>
         <div class="col-sm-6 col-xl-3">
@@ -66,7 +66,7 @@
                     <td class="fw-semibold"><?= esc($operateur['nom']) ?></td>
                     <td><span class="badge <?= (int) $operateur['est_principal'] === 1 ? 'badge-soft-success' : 'badge-soft-primary' ?>"><?= (int) $operateur['est_principal'] === 1 ? 'Principal' : 'Partenaire' ?></span></td>
                     <td class="text-end"><?= (int) $operateur['nombre_prefixes'] ?></td>
-                    <td class="text-end"><?= number_format((float) $operateur['pourcentage'], 2, ',', ' ') ?> %</td>
+                    <td class="text-end"><?= (int) $operateur['est_principal'] === 1 ? '100,00 % des frais' : number_format((float) $operateur['pourcentage'], 2, ',', ' ') . ' % du montant' ?></td>
                   </tr>
                 <?php endforeach; endif; ?>
                 </tbody>

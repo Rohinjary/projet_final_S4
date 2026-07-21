@@ -35,7 +35,11 @@ class OperateurService
         $commissionService = new CommissionOperateurService();
         foreach ($rows as &$row) {
             $commission = $commissionService->getCommissionByOperateurId((int) $row['id']);
-            $row['pourcentage'] = (float) ($commission['pourcentage'] ?? 0);
+            // Les taux de commission concernent uniquement les partenaires.
+            // Les frais conservés par MobiPay sont gérés séparément.
+            $row['pourcentage'] = (int) ($row['est_principal'] ?? 0) === 1
+                ? 0.0
+                : (float) ($commission['pourcentage'] ?? 0);
         }
         unset($row);
 

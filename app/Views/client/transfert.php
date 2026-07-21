@@ -40,6 +40,11 @@
 <div class="stat-value"><?= number_format($solde, 0, ',', ' ') ?> Ar</div>
 </div>
 
+<div class="alert alert-info small">
+Pour un transfert vers un autre operateur, la commission partenaire est calculee sur le montant envoye.
+Le debit total correspond au montant transfere, aux frais MobiPay et a cette commission.
+</div>
+
 <form action="<?= base_url('client/traiter-transfert') ?>" method="post">
 <?= csrf_field() ?>
 <div class="mb-3">
